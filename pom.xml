@@ -38,6 +38,16 @@
             <version>4.8.1</version>
             <scope>test</scope>
         </dependency>
+		<dependency>
+			<groupId>de.unirostock.sems</groupId>
+			<artifactId>CombineArchive</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.taverna.language</groupId>
+			<artifactId>taverna-robundle</artifactId>
+			<version>0.15.1-incubating-SNAPSHOT</version>
+		</dependency>
     </dependencies>
 
     <distributionManagement>
@@ -108,6 +118,14 @@
             <name>SEMS Maven repository</name>
             <url>http://mvn.sems.uni-rostock.de/snapshots/</url>
         </repository>
+		<repository>
+			<id>apache.snapshots</id>
+			<name>Apache Snapshot Repository</name>
+			<url>http://repository.apache.org/snapshots</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+		</repository>
     </repositories>
     <profiles>
         <!-- deployment profile -->
