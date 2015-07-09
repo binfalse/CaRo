@@ -4,11 +4,17 @@
 package de.unirostock.sems.caro;
 
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.taverna.robundle.Bundle;
+import org.jdom2.Namespace;
 
+import de.binfalse.bflog.LOGGER;
 import de.unirostock.sems.cbarchive.CombineArchive;
 
 
@@ -19,6 +25,34 @@ import de.unirostock.sems.cbarchive.CombineArchive;
  */
 public abstract class CaRoConverter
 {
+	public static final String [] RO_RESTRICTIONS = new String [] {
+		"/.ro/manifest.json",
+		"/META-INF/container.xml",
+		"/META-INF/manifest.xml",
+		"/mimetype"
+		};
+	
+	public static Namespace RDF_NAMESPACE = Namespace.getNamespace ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
+	
+	public static URI URI_TURTLE_MIME;
+	public static URI URI_OMEX_META;
+	public static URI URI_MAIN_ENTRY;
+	public static URI URI_CA_RO_CONV;
+	
+	static {
+		try
+		{
+			URI_TURTLE_MIME = new URI ("http://purl.org/NET/mediatypes/text/turtle");
+			URI_OMEX_META = new URI ("http://sems.uni-rostock.de/CaRo/annotations#omexMeta");
+			URI_MAIN_ENTRY = new URI ("http://sems.uni-rostock.de/CaRo/annotations#mainEntry");
+			URI_CA_RO_CONV = new URI ("http://sems.uni-rostock.de/CaRo/annotations#ca2ro");
+		}
+		catch (URISyntaxException e)
+		{
+			LOGGER.error (e, "cannot create turtle URI");
+		}
+	}
+	
 	
 	/** The source file. */
 	protected File sourceFile;
@@ -30,7 +64,7 @@ public abstract class CaRoConverter
 	protected Bundle researchObject;
 	
 	/** The notifications. */
-	protected List<CaRoNotification> messages;
+	protected List<CaRoNotification> notifications;
 	
 	/**
 	 * The Constructor.
@@ -42,7 +76,7 @@ public abstract class CaRoConverter
 		this.sourceFile = sourceFile;
 		combineArchive = null;
 		researchObject = null;
-		messages = new ArrayList <CaRoNotification> ();
+		notifications = new ArrayList <CaRoNotification> ();
 	}
 	
 	/**
@@ -52,7 +86,7 @@ public abstract class CaRoConverter
 	 */
 	public boolean hasErrors ()
 	{
-		for (CaRoNotification crn : messages)
+		for (CaRoNotification crn : notifications)
 			if (crn.getSeverity () == CaRoNotification.SERVERITY_ERROR)
 				return true;
 		return false;
@@ -65,10 +99,20 @@ public abstract class CaRoConverter
 	 */
 	public boolean hasWarnings ()
 	{
-		for (CaRoNotification crn : messages)
+		for (CaRoNotification crn : notifications)
 			if (crn.getSeverity () == CaRoNotification.SERVERITY_WARN)
 				return true;
 		return false;
+	}
+	
+	/**
+	 * Gets the notifications occured during the conversion.
+	 *
+	 * @return the notifications
+	 */
+	public List<CaRoNotification> getNotifications ()
+	{
+		return notifications;
 	}
 
 	/**

@@ -18,7 +18,9 @@
  */
 package de.unirostock.sems.caro;
 
+import java.io.File;
 import java.util.Comparator;
+import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -27,6 +29,8 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+
+import de.unirostock.sems.caro.converters.CaToRo;
 
 
 
@@ -40,6 +44,7 @@ import org.apache.commons.cli.ParseException;
  */
 public class CaRo
 {
+	public static boolean DIE = true;
 	
 	/**
 	 * The main method to be called by the command line.
@@ -49,7 +54,9 @@ public class CaRo
 	 */
 	public static void main (String[] args)
 	{
-		args = new String[] { "-h" };
+		new File ("/tmp/testro.zip").delete ();
+		args = new String[] { "--caro", "-i", "test/CombineArchiveShowCase.omex", "-o", "/tmp/testro.zip" };
+		//args = new String[] { "--caro", "-i", "test/test-ca-contains-valid-evolution.omex", "-o", "/tmp/testro.zip" };
 		
 		Options options = new Options ();
 		
@@ -67,30 +74,88 @@ public class CaRo
 			.build ());
 		
 		CommandLineParser parser = new DefaultParser ();
+		CommandLine line = null;
 		try
 		{
-			CommandLine line = parser.parse (options, args);
+			line = parser.parse (options, args);
 			if (line.hasOption ("help"))
 			{
 				// initialise the member variable
-				help (options);
+				help (options, null);
 				return;
 			}
 		}
 		catch (ParseException e)
 		{
-			System.err.println ("Parsing of command line options failed.  Reason: "
+			help (options, "Parsing of command line options failed.  Reason: "
 				+ e.getMessage ());
-			help (options);
 			return;
 		}
 		
-		System.out.println ("test");
+		File in = new File (line.getOptionValue ("in"));
+		File out = new File (line.getOptionValue ("out"));
+		
+		if (!in.exists ())
+		{
+			help (options, "file " + in + " does not exist");
+			return;
+		}
+		
+		if (out.exists ())
+		{
+			help (options, "file " + out + " already exist");
+			return;
+		}
+		
+		if (line.hasOption ("caro") && line.hasOption ("roca"))
+		{
+			help (options, "only one of --roca and --caro is allowed");
+			return;
+		}
+		
+		CaRoConverter conv = null;
+		
+		if (line.hasOption ("caro"))
+			conv = new CaToRo (in);
+		else
+		{
+			help (options, "you need to either supply --roca or --caro");
+			return;
+		}
+		
+		if (!conv.read ())
+		{
+			help (options, "cannot read the conainer at " + in);
+			return;
+		}
+		if (!conv.convert ())
+		{
+			help (options, "cannot convert the container at " + in);
+			return;
+		}
+		if (!conv.write (out))
+		{
+			help (options, "cannot writ the container to " + out);
+			return;
+		}
+
+		if (conv.hasErrors ())
+			System.err.println ("There were errors!");
+
+		if (conv.hasWarnings ())
+			System.err.println ("There were warnings!");
+		
+		List<CaRoNotification> notifications = conv.getNotifications ();
+		for (CaRoNotification note : notifications)
+			System.out.println (note);
+		
 	}
 	
 	
-	public static void help (Options options)
+	public static void help (Options options, String err)
 	{
+		if (err != null && err.length () > 0)
+			System.err.println (err);
 		HelpFormatter formatter = new HelpFormatter ();
 		formatter.setOptionComparator (new Comparator<Option> ()
 		{
@@ -105,5 +170,7 @@ public class CaRo
 			}
 		});
 		formatter.printHelp ("java -jar CaRo.jar", options, true);
+		if (DIE)
+			System.exit (1);
 	}
 }
