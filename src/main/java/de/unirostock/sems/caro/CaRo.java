@@ -19,8 +19,11 @@
 package de.unirostock.sems.caro;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -30,6 +33,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import de.binfalse.bflog.LOGGER;
 import de.unirostock.sems.caro.converters.CaToRo;
 
 
@@ -46,6 +50,29 @@ public class CaRo
 {
 	public static boolean DIE = true;
 	
+	public static String CARO_VERSION = "unknown";
+	
+	static {
+		// read the current version of CaRo
+		InputStream in = CaRo.class.getResourceAsStream ("/caro-version.properties");
+		if (in != null)
+		{
+			Properties prop = new Properties();
+			try
+			{
+				prop.load (in);
+				String v = (String) prop.get ("version");
+				if (v != null && v.length () > 0)
+					CARO_VERSION = v;
+				in.close ();
+			}
+			catch (IOException e)
+			{
+				LOGGER.warn (e, "wasn't able to open CaRo version file");
+			}
+		}
+	}
+	
 	/**
 	 * The main method to be called by the command line.
 	 * 
@@ -54,6 +81,7 @@ public class CaRo
 	 */
 	public static void main (String[] args)
 	{
+		System.out.println (CARO_VERSION);
 		new File ("/tmp/testro.zip").delete ();
 		args = new String[] { "--caro", "-i", "test/CombineArchiveShowCase.omex", "-o", "/tmp/testro.zip" };
 		//args = new String[] { "--caro", "-i", "test/test-ca-contains-valid-evolution.omex", "-o", "/tmp/testro.zip" };

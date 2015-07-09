@@ -18,14 +18,18 @@
  */
 package de.unirostock.sems.caro;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import de.binfalse.bflog.LOGGER;
+import de.unirostock.sems.caro.converters.RoToCa;
 
 
 
@@ -50,7 +54,7 @@ public class CaroTests
 	 * Test caro.
 	 */
 	@BeforeClass
-	public void testChecks ()
+	public static void testChecks ()
 	{
 		assertTrue ("combine archive showcase does not exist",
 			CA_EXAMPLE1.exists ());
@@ -63,8 +67,21 @@ public class CaroTests
 	 * Initial tests.
 	 */
 	@Test
-	public void testInit ()
+	public void testRoCa ()
 	{
-		assertTrue (true);
+		try
+		{
+			LOGGER.setLogStackTrace (true);
+			File tmp = File.createTempFile ("testRoCa", ".omex");
+			tmp.delete ();
+			CaRoConverter conv = new RoToCa (RO_EXAMPLE1);
+			conv.convertTo (tmp);
+			System.out.println (tmp);
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace ();
+			fail ("converting failed");
+		}
 	}
 }
