@@ -51,10 +51,10 @@ extends CaRoConverter
 	}
 
 	/* (non-Javadoc)
-	 * @see de.unirostock.sems.caro.CaRoConverter#read()
+	 * @see de.unirostock.sems.caro.CaRoConverter#openSourceContainer()
 	 */
 	@Override
-	public boolean read ()
+	protected boolean openSourceContainer ()
 	{
 		try
 		{
@@ -74,23 +74,48 @@ extends CaRoConverter
 	}
 
 	/* (non-Javadoc)
+	 * @see de.unirostock.sems.caro.CaRoConverter#closeSourceContainer()
+	 */
+	@Override
+	protected boolean closeSourceContainer ()
+	{
+		if (combineArchive == null)
+			return true;
+		try
+		{
+			combineArchive.close ();
+			return true;
+		}
+		catch (IOException e)
+		{
+			LOGGER.error (e, "wasn't able to close combine archive ", sourceFile);
+			notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN, "wasn't able to close the combine archive at " + sourceFile + " : " + e.getMessage ()));
+		}
+		return false;
+	}
+
+	/* (non-Javadoc)
 	 * @see de.unirostock.sems.caro.CaRoConverter#convert()
 	 */
 	@Override
-	public boolean convert ()
+	protected boolean convert ()
 	{
 		try
 		{
+			// create ro infrastructure
 			researchObject = Bundles.createBundle ();
 			Manifest roManifest = researchObject.getManifest ();
 			Path annotationsDir = researchObject.getRoot().resolve("/.ro/annotaions");
 			List<PathAnnotation> annotations = roManifest.getAnnotations ();
-			List<ArchiveEntry> mainEntries = combineArchive.getMainEntries ();
 			tagConvertedContainer (annotations);
+			// read the ca
+			List<ArchiveEntry> mainEntries = combineArchive.getMainEntries ();
 			int annotationNumber = 0;
 			for (ArchiveEntry entry : combineArchive.getEntries ())
 			{
+				// consider copying the entries
 				File tmp = File.createTempFile ("CaRoFromCa", "tmp");
+				tmp.deleteOnExit ();
 				entry.extractFile (tmp);
 				Path target = researchObject.getRoot ().resolve (entry.getEntityPath ());
 				
@@ -98,6 +123,7 @@ extends CaRoConverter
 				if (!includeFile (target, entry))
 					continue;
 				
+				// copy entry
 				Files.createDirectories (target.getParent ());
 				Files.copy (tmp.toPath (), target);
 				
@@ -110,9 +136,11 @@ extends CaRoConverter
 				}
 				else
 				{
+					// handle meta date
 					PathMetadata pmd = roManifest.getAggregation (target);
 					pmd.setConformsTo (entry.getFormat ());
-					annotationNumber = handleMetaDate (target, entry.getDescriptions (), annotationsDir, annotationNumber, annotations);
+					annotationNumber = handleMetaData (target, entry.getDescriptions (), annotationsDir, annotationNumber, annotations);
+					// is this a main entry?
 					if (mainEntries.contains (entry))
 						setMainEntry (target, annotations);
 				}
@@ -127,6 +155,12 @@ extends CaRoConverter
 		return false;
 	}
 	
+	/**
+	 * Add an annotation signalling that this is the main entry.
+	 *
+	 * @param target the path to the file
+	 * @param annotations the list of existing annotations
+	 */
 	private void setMainEntry (Path target, List<PathAnnotation> annotations)
 	{
 		PathAnnotation tag = new PathAnnotation ();
@@ -135,7 +169,17 @@ extends CaRoConverter
 		annotations.add (tag);
 	}
 
-	private int handleMetaDate (Path target, List<MetaDataObject> meta, Path annotationsDir, int annotationNumber, List<PathAnnotation> annotations)
+	/**
+	 * Handle meta data of a ca entry.
+	 *
+	 * @param target the path to the file in the ro
+	 * @param meta the meta data of the ca entry
+	 * @param annotationsDir the annotations dir in the ro
+	 * @param annotationNumber the annotation number
+	 * @param annotations the list of existing annotations
+	 * @return the int
+	 */
+	private int handleMetaData (Path target, List<MetaDataObject> meta, Path annotationsDir, int annotationNumber, List<PathAnnotation> annotations)
 	{
 		for (MetaDataObject m : meta)
 		{
@@ -154,7 +198,7 @@ extends CaRoConverter
 				pa.generateAnnotationId ();
 				annotations.add (pa);
 				// tag this annotation as a conversion from a combine archive
-				tagAnnoation (pa, annotations);
+				tagAnnotation (pa, annotations);
 			}
 			catch (IOException e)
 			{
@@ -166,7 +210,13 @@ extends CaRoConverter
 		return annotationNumber;
 	}
 	
-	private void tagAnnoation (PathAnnotation pa, List<PathAnnotation> annotations)
+	/**
+	 * Tag an annotation to indicate that it was created by conversion.
+	 *
+	 * @param pa the pa
+	 * @param annotations the list of existing annotations
+	 */
+	private void tagAnnotation (PathAnnotation pa, List<PathAnnotation> annotations)
 	{
 		PathAnnotation tag = new PathAnnotation ();
 		tag.setAbout (pa.getUri ());
@@ -174,6 +224,11 @@ extends CaRoConverter
 		annotations.add (tag);
 	}
 	
+	/**
+	 * Tag the container to indicate that it was created by conversion..
+	 *
+	 * @param annotations the list of existing annotations
+	 */
 	private void tagConvertedContainer (List<PathAnnotation> annotations)
 	{
 		PathAnnotation tag = new PathAnnotation ();
@@ -213,8 +268,10 @@ extends CaRoConverter
 	 * @see de.unirostock.sems.caro.CaRoConverter#write(java.io.File)
 	 */
 	@Override
-	public boolean write (File target)
+	protected boolean write (File target)
 	{
+		if (researchObject == null)
+			return false;
 		try
 		{
 			Bundles.closeAndSaveBundle(researchObject, target.toPath ());

@@ -116,18 +116,25 @@ public abstract class CaRoConverter
 	}
 
 	/**
-	 * Read the container.
+	 * Open the source container.
 	 *
-	 * @return true, if reading was successful
+	 * @return true, if opening was successful
 	 */
-	public abstract boolean read ();
+	protected abstract boolean openSourceContainer ();
+
+	/**
+	 * Open the source container.
+	 *
+	 * @return true, if opening was successful
+	 */
+	protected abstract boolean closeSourceContainer ();
 	
 	/**
 	 * Convert the container.
 	 *
 	 * @return true, if converting was successful
 	 */
-	public abstract boolean convert ();
+	protected abstract boolean convert ();
 	
 	/**
 	 * Write the container.
@@ -135,5 +142,15 @@ public abstract class CaRoConverter
 	 * @param target the target file to write to
 	 * @return true, if exporting was successful
 	 */
-	public abstract boolean write (File target);
+	protected abstract boolean write (File target);
+	
+	public boolean convertTo (File target)
+	{
+		// TODO
+		openSourceContainer ();
+		convert ();
+		closeSourceContainer ();
+		write (target);
+		return true;
+	}
 }

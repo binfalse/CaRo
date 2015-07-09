@@ -123,7 +123,7 @@ public class CaRo
 			return;
 		}
 		
-		if (!conv.read ())
+		if (!conv.openSourceContainer ())
 		{
 			help (options, "cannot read the conainer at " + in);
 			return;
