@@ -175,7 +175,9 @@ public class RoToCa
 				List<String> errors = new ArrayList<String> ();
 				try
 				{
-					MetaDataFile.readFile (researchObject.getRoot ().resolve (Paths.get (annot.getContent ())), archiveEntries, combineArchive, true, errors);
+					//System.out.println (annot.getContent ());
+					Path annoPath = researchObject.getRoot ().resolve (annot.getContent ().toString ());
+					MetaDataFile.readFile (annoPath, archiveEntries, combineArchive, true, errors);
 					if (errors.size () > 0)
 						for (String err : errors)
 						{

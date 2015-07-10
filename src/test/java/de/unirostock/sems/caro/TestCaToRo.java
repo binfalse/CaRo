@@ -18,19 +18,26 @@
  */
 package de.unirostock.sems.caro;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
 
-import org.junit.BeforeClass;
+import org.apache.taverna.robundle.Bundle;
+import org.apache.taverna.robundle.Bundles;
+import org.jdom2.JDOMException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import de.binfalse.bflog.LOGGER;
+import de.unirostock.sems.caro.CaRoTests.CaComparisonResult;
 import de.unirostock.sems.caro.converters.CaToRo;
 import de.unirostock.sems.caro.converters.RoToCa;
+import de.unirostock.sems.cbarchive.CombineArchive;
+import de.unirostock.sems.cbarchive.CombineArchiveException;
 
 
 
@@ -56,13 +63,48 @@ public class TestCaToRo
 	{
 		try
 		{
-			File tmp = folder.newFile ("testCaRo.bundle");
+			File tmp = File.createTempFile ("testCaToRo", ".bundle");
 			tmp.delete ();
-			CaRoConverter conv = new RoToCa (CaRoTests.RO_EXAMPLE1);
-			conv.convertTo (tmp);
-			System.out.println (tmp);
+			CaRoConverter conv = new CaToRo (CaRoTests.CA_EXAMPLE1);
+			assertTrue ("converting failed", conv.convertTo (tmp));
+
+			// compare archives
+			CombineArchive sourceCa = new CombineArchive (CaRoTests.CA_EXAMPLE1);
+			Bundle convertedBundle = Bundles.openBundleReadOnly (tmp.toPath ());
+			CaRoTests.ComparisonResult comparison = CaRoTests.compareContainers (sourceCa, convertedBundle);
+			assertEquals ("conversion resulted in diff in entries (ca only): " + comparison, 0, comparison.numCaOnly);
+			assertEquals ("conversion resulted in diff in entries (ro only): " + comparison, 0, comparison.numRoOnly);
+			assertEquals ("conversion resulted in diff in entries (ro remote): " + comparison, 0, comparison.numRoRemote);
+			sourceCa.close ();
+			convertedBundle.close ();
+
+			
+			// try vice versa
+			conv = new RoToCa (tmp);
+			File tmp2 = File.createTempFile ("testRoToCa", ".omex");
+			tmp2.delete ();
+			assertTrue ("converting failed", conv.convertTo (tmp2));
+			convertedBundle = Bundles.openBundleReadOnly (tmp.toPath ());
+			CombineArchive convertedCa = new CombineArchive (tmp2);
+			comparison = CaRoTests.compareContainers (convertedCa, convertedBundle);
+			assertEquals ("conversion resulted in diff in entries (ca only): " + comparison, 0, comparison.numCaOnly);
+			assertEquals ("conversion resulted in diff in entries (ro only): " + comparison, 0, comparison.numRoOnly);
+			assertEquals ("conversion resulted in diff in entries (ro remote): " + comparison, 0, comparison.numRoRemote);
+			convertedCa.close ();
+			convertedBundle.close ();
+			
+			CaComparisonResult caComparison = CaRoTests.compareContainers (sourceCa, convertedCa);
+			assertEquals ("double conversion resulted in diff in entries (ca1 only): " + caComparison, 0, caComparison.numCa1Only);
+			assertEquals ("double conversion resulted in diff in entries (ca2 only): " + caComparison, 0, caComparison.numCa2Only);
+			assertEquals ("double conversion resulted in diff in meta: " + caComparison, 0, caComparison.numMetaDiff);
+			assertEquals ("double conversion resulted in diff in main files: " + caComparison, 0, caComparison.numMainDiff);
+			
+			
+			// System.out.println (tmp + " -- " + tmp2);
+			tmp.delete ();
+			tmp2.delete ();
 		}
-		catch (IOException e)
+		catch (IOException | JDOMException | ParseException | CombineArchiveException e)
 		{
 			e.printStackTrace ();
 			fail ("converting failed");

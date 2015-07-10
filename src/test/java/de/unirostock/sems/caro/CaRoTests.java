@@ -19,7 +19,6 @@
 package de.unirostock.sems.caro;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,12 +30,11 @@ import org.apache.taverna.robundle.Bundle;
 import org.apache.taverna.robundle.manifest.PathMetadata;
 import org.junit.BeforeClass;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.Suite.SuiteClasses;
 
-import de.binfalse.bflog.LOGGER;
-import de.unirostock.sems.caro.converters.CaToRo;
-import de.unirostock.sems.caro.converters.RoToCa;
 import de.unirostock.sems.cbarchive.ArchiveEntry;
 import de.unirostock.sems.cbarchive.CombineArchive;
 
@@ -48,6 +46,8 @@ import de.unirostock.sems.cbarchive.CombineArchive;
  * @author Martin Scharm
  * 
  */
+@RunWith(Suite.class)
+@SuiteClasses({ TestCaToRo.class, TestRoToCa.class })
 public class CaRoTests
 {
 	
@@ -57,65 +57,6 @@ public class CaRoTests
 	/** A temporary folder. */
 	@Rule
 	public TemporaryFolder		folder			= new TemporaryFolder ();
-	
-	
-	/**
-	 * Test caro.
-	 */
-	@BeforeClass
-	public static void testChecks ()
-	{
-		assertTrue ("combine archive showcase does not exist",
-			CA_EXAMPLE1.exists ());
-		assertTrue ("document object does not exist", RO_EXAMPLE1.exists ());
-		
-	}
-	
-	
-	/**
-	 * Initial tests.
-	 */
-	@Test
-	public void testRoCa ()
-	{
-		try
-		{
-			LOGGER.setLogStackTrace (true);
-			File tmp = File.createTempFile ("testRoCa", ".omex");
-			tmp.delete ();
-			CaRoConverter conv = new RoToCa (RO_EXAMPLE1);
-			conv.convertTo (tmp);
-			System.out.println (tmp);
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace ();
-			fail ("converting failed");
-		}
-	}
-	
-	
-	/**
-	 * Initial tests.
-	 */
-	@Test
-	public void testCaRo ()
-	{
-		try
-		{
-			LOGGER.setLogStackTrace (true);
-			File tmp = File.createTempFile ("testRoCa", ".omex");
-			tmp.delete ();
-			CaRoConverter conv = new CaToRo (RO_EXAMPLE1);
-			conv.convertTo (tmp);
-			System.out.println (tmp);
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace ();
-			fail ("converting failed");
-		}
-	}
 	
 	
 	public static ComparisonResult compareContainers (CombineArchive ca, Bundle ro) throws IOException
@@ -165,6 +106,42 @@ public class CaRoTests
 		
 		// TODO: check meta
 		return result;
+	}
+	
+	
+	public static CaComparisonResult compareContainers (CombineArchive ca1, CombineArchive ca2) throws IOException
+	{
+		CaComparisonResult result = (new CaRoTests ()).new CaComparisonResult ();
+		// find all ca entries in ro
+		for (ArchiveEntry entry : ca1.getEntries ())
+		{
+			ArchiveEntry entry2 = ca2.getEntry (entry.getFilePath ());
+			if (entry2 == null)
+				result.numCa1Only++;
+			else
+				result.numMetaDiff += Math.abs (entry.getDescriptions ().size () - entry2.getDescriptions ().size ());
+		}
+		// find all ca entries in ro
+		for (ArchiveEntry entry : ca2.getEntries ())
+		{
+			ArchiveEntry entry2 = ca1.getEntry (entry.getFilePath ());
+			if (entry2 == null)
+				result.numCa2Only++;
+		}
+		result.numMainDiff = Math.abs (ca1.getMainEntries ().size () - ca2.getMainEntries ().size ());
+		return result;
+	}
+	
+	public class CaComparisonResult
+	{
+		int numCa1Only = 0;
+		int numCa2Only = 0;
+		int numMetaDiff = 0;
+		int numMainDiff = 0;
+		public String toString ()
+		{
+			return "COMPARISON: numCa1Only: " + numCa1Only + " -- numCa2Only: " + numCa2Only + " -- numMainDiff: " + numMainDiff + " -- numMetaDiff: " + numMetaDiff;
+		}
 	}
 	
 	public class ComparisonResult

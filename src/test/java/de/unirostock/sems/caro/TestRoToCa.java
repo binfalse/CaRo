@@ -64,7 +64,7 @@ public class TestRoToCa
 			File tmp = File.createTempFile ("testRoToCa", ".omex");
 			tmp.delete ();
 			CaRoConverter conv = new RoToCa (CaRoTests.RO_EXAMPLE1);
-			assertTrue (conv.convertTo (tmp));
+			assertTrue ("converting failed", conv.convertTo (tmp));
 			
 			// compare archives
 			CombineArchive convertedCa = new CombineArchive (tmp);
@@ -79,7 +79,7 @@ public class TestRoToCa
 			// try vice versa
 			conv = new CaToRo (tmp);
 			File tmp2 = File.createTempFile ("testRoToCa", ".bundle");
-			assertTrue (conv.convertTo (tmp2));
+			assertTrue ("converting failed", conv.convertTo (tmp2));
 			convertedCa = new CombineArchive (tmp);
 			Bundle convertedBundle = Bundles.openBundleReadOnly (tmp2.toPath ());
 			comparison = CaRoTests.compareContainers (convertedCa, convertedBundle);
@@ -88,10 +88,10 @@ public class TestRoToCa
 			assertEquals ("conversion resulted in diff in entries (ro remote): " + comparison, 0, comparison.numRoRemote);
 			convertedCa.close ();
 			convertedBundle.close ();
-			System.out.println (tmp + " -- " + tmp2);
-			// TODO
-			//tmp.delete ();
-			//tmp2.delete ();
+			//System.out.println (tmp + " -- " + tmp2);
+			
+			tmp.delete ();
+			tmp2.delete ();
 		}
 		catch (IOException | JDOMException | ParseException | CombineArchiveException e)
 		{
