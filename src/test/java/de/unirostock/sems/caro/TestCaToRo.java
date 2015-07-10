@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import de.binfalse.bflog.LOGGER;
+import de.unirostock.sems.caro.converters.CaToRo;
 import de.unirostock.sems.caro.converters.RoToCa;
 
 
@@ -39,11 +40,8 @@ import de.unirostock.sems.caro.converters.RoToCa;
  * @author Martin Scharm
  * 
  */
-public class CaroTests
+public class TestCaToRo
 {
-	
-	public static final File	CA_EXAMPLE1	= new File ("test/CombineArchiveShowCase.omex");
-	public static final File	RO_EXAMPLE1	= new File ("test/DocumentObject.omex");
 	
 	/** A temporary folder. */
 	@Rule
@@ -51,30 +49,16 @@ public class CaroTests
 	
 	
 	/**
-	 * Test caro.
-	 */
-	@BeforeClass
-	public static void testChecks ()
-	{
-		assertTrue ("combine archive showcase does not exist",
-			CA_EXAMPLE1.exists ());
-		assertTrue ("document object does not exist", RO_EXAMPLE1.exists ());
-		
-	}
-	
-	
-	/**
 	 * Initial tests.
 	 */
 	@Test
-	public void testRoCa ()
+	public void testCaRo ()
 	{
 		try
 		{
-			LOGGER.setLogStackTrace (true);
-			File tmp = File.createTempFile ("testRoCa", ".omex");
+			File tmp = folder.newFile ("testCaRo.bundle");
 			tmp.delete ();
-			CaRoConverter conv = new RoToCa (RO_EXAMPLE1);
+			CaRoConverter conv = new RoToCa (CaRoTests.RO_EXAMPLE1);
 			conv.convertTo (tmp);
 			System.out.println (tmp);
 		}

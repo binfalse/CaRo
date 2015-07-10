@@ -31,12 +31,17 @@ public abstract class CaRoConverter
 		"/META-INF/manifest.xml",
 		"/mimetype"
 		};
+	public static final String [] CA_RESTRICTIONS = new String [] {
+		"/metadata.rdf",
+		"/manifest.xml"
+		};
 	
 	public static Namespace RDF_NAMESPACE = Namespace.getNamespace ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
 	
 	public static URI URI_TURTLE_MIME;
 	public static URI URI_OMEX_META;
 	public static URI URI_MAIN_ENTRY;
+	public static URI URI_BF_MAIN_ENTRY;
 	public static URI URI_CA_RO_CONV;
 	
 	static {
@@ -45,6 +50,7 @@ public abstract class CaRoConverter
 			URI_TURTLE_MIME = new URI ("http://purl.org/NET/mediatypes/text/turtle");
 			URI_OMEX_META = new URI ("http://sems.uni-rostock.de/CaRo/annotations#omexMeta");
 			URI_MAIN_ENTRY = new URI ("http://sems.uni-rostock.de/CaRo/annotations#mainEntry");
+			URI_BF_MAIN_ENTRY = new URI ("http://binfalse.de#rootdocument");
 			URI_CA_RO_CONV = new URI ("http://sems.uni-rostock.de/CaRo/annotations#ca2ro");
 		}
 		catch (URISyntaxException e)
@@ -144,13 +150,46 @@ public abstract class CaRoConverter
 	 */
 	protected abstract boolean write (File target);
 	
+	/**
+	 * Convert this container to <code>target</code>.
+	 *
+	 * @param target the target file
+	 * @return true, if converting was successful
+	 */
 	public boolean convertTo (File target)
 	{
-		// TODO
-		openSourceContainer ();
-		convert ();
-		closeSourceContainer ();
-		write (target);
+		// open
+		if (!openSourceContainer ())
+		{
+			LOGGER.error ("wasn't able to open ", sourceFile);
+			notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_ERROR, "wasn't able to open " + sourceFile));
+			closeSourceContainer ();
+			return false;
+		}
+		// convert
+		if (!convert ())
+		{
+			LOGGER.error ("wasn't able to convert ", sourceFile);
+			notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_ERROR, "wasn't able to convert " + sourceFile));
+			closeSourceContainer ();
+			return false;
+		}
+		// close source container
+		if (!closeSourceContainer ())
+		{
+			LOGGER.error ("wasn't able to close ", sourceFile);
+			notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_ERROR, "wasn't able to close " + sourceFile));
+			closeSourceContainer ();
+			return false;
+		}
+		// write target file
+		if (!write (target))
+		{
+			LOGGER.error ("wasn't able to write ", target);
+			notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_ERROR, "wasn't able to write " + target));
+			closeSourceContainer ();
+			return false;
+		}
 		return true;
 	}
 }

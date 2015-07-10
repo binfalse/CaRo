@@ -109,17 +109,27 @@ public class RoToCa
 			List<PathMetadata> aggregations = roManifest.getAggregates ();
 			for (PathMetadata pmd : aggregations)
 			{
+				// TODO: handle root annotations
+				if (pmd.getFile () != null && Files.isDirectory (pmd.getFile ()))
+					continue;
+				
 				// if it's a file add to combine archive
 				if (pmd.getFile () == null)
 				{
 					if (!handleRemoteFile (pmd))
 						continue;
 				}
+				
 				// extract
 				File tmp = File.createTempFile ("CaRoFromRo", pmd.getFile ().getFileName ().toString ());
 				tmp.delete ();
 				Files.copy (pmd.getFile (), tmp.toPath ());
 				tmp.deleteOnExit ();
+
+				// check some special files
+				if (!includeFile (pmd.getFile ()))
+					continue;
+
 				// import
 				URI format = pmd.getConformsTo ();
 				if (format == null)
@@ -128,8 +138,7 @@ public class RoToCa
 				}
 				ArchiveEntry entry = combineArchive.addEntry (tmp, pmd.getFile ().toString (), format);
 				archiveEntries.put (entry.getFilePath (), entry);
-				
-				
+
 				// respect annotations
 				handleAnnotations (pmd.getFile (), pmd, annotations, entry, archiveEntries);
 				
@@ -153,6 +162,13 @@ public class RoToCa
 		List<PathAnnotation> curAnnotations = getAnnotations (pmd, annotations);
 		for (PathAnnotation annot : curAnnotations)
 		{
+			if (annot.getContent ().equals (URI_MAIN_ENTRY) || annot.getContent ().equals (URI_BF_MAIN_ENTRY))
+			{
+				// this is a main entry
+				combineArchive.addMainEntry (entry);
+				continue;
+			}
+			
 			if (annotationHasOmexTag (annot, annotations))
 			{
 				// copy it to the list of overall annotations
@@ -176,7 +192,7 @@ public class RoToCa
 			else
 			{
 				// what should we do?
-				LOGGER.error ("this is not implemented yet");
+				LOGGER.error ("this is not implemented yet: " + annot);
 			}
 		}
 	}
@@ -218,6 +234,23 @@ public class RoToCa
 		notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN, "skipping manifest entry " + pmd.getUri () + " as it seems to be no local file"));
 		
 		return false;
+	}
+	/**
+	 * Should we include a certain file?
+	 *
+	 * @param target the file in question
+	 * @return true, if file can be included
+	 */
+	private boolean includeFile (Path target)
+	{
+		for (String path : CA_RESTRICTIONS)
+			if (target.startsWith (path))
+			{
+				notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN, 
+					"dropping " + path + " as this is a special file in combine archives!"));
+				return false;
+			}
+		return true;
 	}
 	
 	
