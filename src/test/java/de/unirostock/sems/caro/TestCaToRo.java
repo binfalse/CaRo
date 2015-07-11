@@ -18,9 +18,7 @@
  */
 package de.unirostock.sems.caro;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -110,4 +108,60 @@ public class TestCaToRo
 			fail ("converting failed");
 		}
 	}
+	
+	
+	/**
+	 * Initial tests.
+	 * @throws CombineArchiveException 
+	 * @throws ParseException 
+	 * @throws JDOMException 
+	 * @throws IOException 
+	 */
+	@Test
+	public void testRoToRo ()
+	{
+		try
+		{
+			File tmp = File.createTempFile ("testCaToRo", ".bundle");
+			tmp.delete ();
+			CaRoConverter conv = new CaToRo (CaRoTests.RO_EXAMPLE1);
+			assertFalse ("converting did not fail", conv.convertTo (tmp));
+			conv = new CaToRo (CaRoTests.CA_EXAMPLE1);
+			assertFalse ("converting did not fail", conv.convertTo (new File (tmp.getAbsolutePath () + "/does/not/exist")));
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace ();
+			fail ("converting failed");
+		}
+	}
+	
+	/**
+	 * Test conflicts.
+	 */
+	@Test
+	public void testConflicts ()
+	{
+		try
+		{
+			File tmp = File.createTempFile ("testCaToRo", ".bundle");
+			tmp.delete ();
+			CaRoConverter conv = new CaToRo (CaRoTests.CA_EXAMPLE_CONTAINS_EVOLUTION);
+			assertTrue ("converting did fail", conv.convertTo (tmp));
+			assertTrue ("expected some notifications", conv.getNotifications ().size () > 0);
+			
+			
+			
+			conv = new CaToRo (CaRoTests.CA_EXAMPLE_CONTAINS_MANIFEST);
+			assertTrue ("converting did fail", conv.convertTo (tmp));
+			assertTrue ("expected some warnings", conv.hasWarnings ());
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace ();
+			fail ("converting failed");
+		}
+	}
+	
+	
 }

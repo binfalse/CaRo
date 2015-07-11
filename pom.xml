@@ -3,7 +3,7 @@
 
     <groupId>de.unirostock.sems</groupId>
     <artifactId>CaRo</artifactId>
-    <version>0.3</version>
+    <version>0.4</version>
     <packaging>jar</packaging>
 
     <name>CaRo</name>
@@ -40,7 +40,7 @@
         <dependency>
             <groupId>de.unirostock.sems</groupId>
             <artifactId>CombineArchive</artifactId>
-            <version>1.0</version>
+            <version>1.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.taverna.language</groupId>

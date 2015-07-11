@@ -48,16 +48,19 @@ public class TestMain
 	/** The err content. */
 	private ByteArrayOutputStream	errContent;
 	
+	private static PrintStream out, err;
+	
 	/**
 	 * Test caro.
 	 */
 	@BeforeClass
-	public static void testChecks ()
+	public static void testInit ()
 	{
 		assertTrue ("combine archive showcase does not exist",
 			CaRoTests.CA_EXAMPLE1.exists ());
 		assertTrue ("document object does not exist", CaRoTests.RO_EXAMPLE1.exists ());
-		
+		out = System.out;
+		err = System.err;
 	}
 
 	
@@ -81,8 +84,8 @@ public class TestMain
 	@After
 	public void cleanUpStreams ()
 	{
-		System.setOut (null);
-		System.setErr (null);
+		System.setOut (out);
+		System.setErr (err);
 	}
 	
 	

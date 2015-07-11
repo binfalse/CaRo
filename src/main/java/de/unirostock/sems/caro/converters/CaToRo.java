@@ -130,6 +130,7 @@ extends CaRoConverter
 				// special case for evolution in turtle format
 				if (target.startsWith ("/.ro/evolution.ttl"))
 				{
+					notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_NOTE, "adding history /.ro/evolution.ttl"));
 					List<Path> hist = new ArrayList<Path> ();
 					hist.add (target);
 					roManifest.setHistory (hist);
