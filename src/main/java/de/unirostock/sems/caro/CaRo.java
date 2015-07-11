@@ -35,6 +35,7 @@ import org.apache.commons.cli.ParseException;
 
 import de.binfalse.bflog.LOGGER;
 import de.unirostock.sems.caro.converters.CaToRo;
+import de.unirostock.sems.caro.converters.RoToCa;
 
 
 
@@ -81,9 +82,9 @@ public class CaRo
 	 */
 	public static void main (String[] args)
 	{
-		System.out.println (CARO_VERSION);
-		new File ("/tmp/testro.zip").delete ();
-		args = new String[] { "--caro", "-i", "test/CombineArchiveShowCase.omex", "-o", "/tmp/testro.zip" };
+		//System.out.println (CARO_VERSION);
+		//new File ("/tmp/testro.zip").delete ();
+		//args = new String[] { "--caro", "-i", "test/CombineArchiveShowCase.omex", "-o", "/tmp/testro.zip" };
 		//args = new String[] { "--caro", "-i", "test/test-ca-contains-valid-evolution.omex", "-o", "/tmp/testro.zip" };
 		
 		Options options = new Options ();
@@ -145,13 +146,15 @@ public class CaRo
 		
 		if (line.hasOption ("caro"))
 			conv = new CaToRo (in);
+		else if (line.hasOption ("roca"))
+			conv = new RoToCa (in);
 		else
 		{
 			help (options, "you need to either supply --roca or --caro");
 			return;
 		}
 		
-		if (!conv.openSourceContainer ())
+		/*if (!conv.openSourceContainer ())
 		{
 			help (options, "cannot read the conainer at " + in);
 			return;
@@ -165,7 +168,8 @@ public class CaRo
 		{
 			help (options, "cannot writ the container to " + out);
 			return;
-		}
+		}*/
+		conv.convertTo (out);
 
 		if (conv.hasErrors ())
 			System.err.println ("There were errors!");
@@ -184,6 +188,7 @@ public class CaRo
 	{
 		if (err != null && err.length () > 0)
 			System.err.println (err);
+		System.out.println ("this is CaRo version " + CARO_VERSION);
 		HelpFormatter formatter = new HelpFormatter ();
 		formatter.setOptionComparator (new Comparator<Option> ()
 		{

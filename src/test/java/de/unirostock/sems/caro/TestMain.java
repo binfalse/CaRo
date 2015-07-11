@@ -18,27 +18,17 @@
  */
 package de.unirostock.sems.caro;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.text.ParseException;
+import java.io.PrintStream;
 
-import org.apache.taverna.robundle.Bundle;
-import org.apache.taverna.robundle.Bundles;
-import org.jdom2.JDOMException;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import de.unirostock.sems.caro.CaRoTests.CaComparisonResult;
-import de.unirostock.sems.caro.converters.CaToRo;
-import de.unirostock.sems.caro.converters.RoToCa;
-import de.unirostock.sems.cbarchive.CombineArchive;
-import de.unirostock.sems.cbarchive.CombineArchiveException;
 
 
 
@@ -50,7 +40,13 @@ import de.unirostock.sems.cbarchive.CombineArchiveException;
  */
 public class TestMain
 {
+
 	
+	/** The out content. */
+	private ByteArrayOutputStream	outContent;
+	
+	/** The err content. */
+	private ByteArrayOutputStream	errContent;
 	
 	/**
 	 * Test caro.
@@ -63,13 +59,148 @@ public class TestMain
 		assertTrue ("document object does not exist", CaRoTests.RO_EXAMPLE1.exists ());
 		
 	}
+
+	
+	
+	/**
+	 * Sets the up streams.
+	 */
+	@Before
+	public void setUpStreams ()
+	{
+		outContent	= new ByteArrayOutputStream ();
+		errContent	= new ByteArrayOutputStream ();
+		System.setOut (new PrintStream (outContent));
+		System.setErr (new PrintStream (errContent));
+	}
+	
+	
+	/**
+	 * Clean up streams.
+	 */
+	@After
+	public void cleanUpStreams ()
+	{
+		System.setOut (null);
+		System.setErr (null);
+	}
 	
 	
 	/**
 	 * Initial tests.
 	 */
 	@Test
-	public void testCaRo ()
+	public void testCaRoHelp ()
 	{
+		new CaRo ();
+		
+		CaRo.DIE = false;
+		
+		CaRo.main (null);
+		
+		// check there was an error
+		assertTrue ("expected an error", errContent.toString ().length () > 5);
+		
+		// check help
+		String [] lines = outContent.toString ().split ("\n");
+		assertTrue ("expected more options on help page", 6 < lines.length);
+		
+		errContent.reset ();
+		outContent.reset ();
+		
+		CaRo.main (new String[] { "--help" });
+		assertTrue ("expected an error", errContent.toString ().length () > 5);
+		lines = outContent.toString ().split ("\n");
+		assertTrue ("expected more options on help page", 6 < lines.length);
+		
+		errContent.reset ();
+		outContent.reset ();
+		
+		CaRo.main (new String[] { "--caro", "-i", CaRoTests.CA_EXAMPLE1.getAbsolutePath (), "--roca", "-o", "who-cares.ro" });
+		assertTrue ("expected an error", errContent.toString ().length () > 5);
+		lines = outContent.toString ().split ("\n");
+		assertTrue ("expected more options on help page", 6 < lines.length);
+		
+		errContent.reset ();
+		outContent.reset ();
+		
+		CaRo.main (new String[] { "--caro", "-i", CaRoTests.CA_EXAMPLE1.getAbsolutePath (), "--help", "-o", "who-cares.ro" });
+		assertTrue ("expected no error", errContent.toString ().length () == 0);
+		lines = outContent.toString ().split ("\n");
+		assertTrue ("expected more options on help page", 6 < lines.length);
+	}
+	
+	/**
+	 * Test converting.
+	 */
+	@Test
+	public void testConverting ()
+	{
+		CaRo.DIE = false;
+		File tmpBundle = null;
+		File tmpOmex = null;
+		try
+		{
+			tmpBundle = File.createTempFile ("testCaRoMain", ".bundle");
+			tmpOmex = File.createTempFile ("testCaRoMain", ".omex");
+			tmpBundle.delete ();
+			tmpOmex.delete ();
+		}
+		catch (IOException e)
+		{
+			fail ("failed to create temp files: " + e.getMessage ());
+		}
+		
+		CaRo.main (new String[] { "--caro", "-i", CaRoTests.CA_EXAMPLE1.getAbsolutePath (), "-o", tmpBundle.getAbsolutePath () });
+		// check there was an error
+		assertTrue ("did not expect an error converting the bundle: " + errContent.toString (), errContent.toString ().length () == 0);
+
+		// do not overwrite file!
+		CaRo.main (new String[] { "--caro", "-i", CaRoTests.CA_EXAMPLE1.getAbsolutePath (), "-o", tmpBundle.getAbsolutePath () });
+		// check there was an error
+		assertTrue ("expected an error", errContent.toString ().length () > 5);
+
+		errContent.reset ();
+		outContent.reset ();
+		
+		// test the other way around
+		CaRo.main (new String[] { "--roca", "-i", CaRoTests.RO_EXAMPLE1.getAbsolutePath (), "-o", tmpOmex.getAbsolutePath () });
+		// check there was an error
+		assertTrue ("did not expect an error converting the ro: " + errContent.toString (), errContent.toString ().length () == 0);
+
+		// do not overwrite file!
+		CaRo.main (new String[] { "--roca", "-i", CaRoTests.RO_EXAMPLE1.getAbsolutePath (), "-o", tmpOmex.getAbsolutePath () });
+		// check there was an error
+		assertTrue ("expected an error", errContent.toString ().length () > 5);
+
+		errContent.reset ();
+		outContent.reset ();
+		
+		// test invalid input
+		CaRo.main (new String[] { "--roca", "-i", CaRoTests.RO_EXAMPLE1.getAbsolutePath () + "-doesnotexists", "-o", tmpOmex.getAbsolutePath () });
+		// check there was an error
+		assertFalse ("did expect an error converting the non exising ro: " + errContent.toString (), errContent.toString ().length () == 0);
+
+		tmpBundle.delete ();
+		tmpOmex.delete ();
+	}
+	
+	
+	/**
+	 * Test stream collection.
+	 */
+	@Test
+	public void testStreams ()
+	{
+		assertFalse ("sys.err collection did not work properly", errContent.toString ().length () > 0);
+		assertFalse ("sys.out collection did not work properly", outContent.toString ().length () > 0);
+		System.out.print ("testOut");
+		System.err.print ("testErr");
+		assertTrue ("sys.err collection did not work properly", errContent.toString ().equals ("testErr"));
+		assertTrue ("sys.out collection did not work properly", outContent.toString ().equals ("testOut"));
+		errContent.reset ();
+		outContent.reset ();
+		assertFalse ("sys.err collection did not work properly", errContent.toString ().length () > 0);
+		assertFalse ("sys.out collection did not work properly", outContent.toString ().length () > 0);
 	}
 }

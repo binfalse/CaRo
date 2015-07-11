@@ -47,12 +47,12 @@ import de.unirostock.sems.cbarchive.CombineArchive;
  * 
  */
 @RunWith(Suite.class)
-@SuiteClasses({ TestCaToRo.class, TestRoToCa.class })
+@SuiteClasses({ TestMain.class, TestCaToRo.class, TestRoToCa.class, TestCaRoNotifications.class })
 public class CaRoTests
 {
 	
 	public static final File	CA_EXAMPLE1	= new File ("test/CombineArchiveShowCase.omex");
-	public static final File	RO_EXAMPLE1	= new File ("test/DocumentObject.omex");
+	public static final File	RO_EXAMPLE1	= new File ("test/DocumentObject.ro");
 	
 	/** A temporary folder. */
 	@Rule
