@@ -99,8 +99,53 @@ public class TestRoToCa
 			fail ("converting failed");
 		}
 	}
-	
-	
+
+	/**
+	 * Test ro-to-ca.
+	 */
+	@Test
+	public void testRoWithRemotes ()
+	{
+		try
+		{
+			File tmp = File.createTempFile ("testRoToCa", ".omex");
+			tmp.delete ();
+			CaRoConverter conv = new RoToCa (CaRoTests.RO_EXAMPLE_CONTAINING_REMOTES);
+			assertTrue ("converting failed", conv.convertTo (tmp));
+
+			assertTrue ("expected some warnings", conv.hasWarnings ());
+			
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace ();
+			fail ("converting failed");
+		}
+	}
+
+	/**
+	 * Test failes.
+	 */
+	@Test
+	public void testFail ()
+	{
+		try
+		{
+			File tmp = File.createTempFile ("testRoToCa", ".omex");
+			CaRoConverter conv = new RoToCa (CaRoTests.RO_EXAMPLE1);
+			assertFalse ("converting did not fail", conv.convertTo (new File (tmp.getAbsolutePath () + "/does/not/exist")));
+			assertTrue ("expected some errors", conv.hasErrors ());
+			
+			conv = new RoToCa (new File (CaRoTests.RO_EXAMPLE1.getAbsolutePath () + "/does/not/exist"));
+			assertFalse ("converting did not fail", conv.convertTo (new File (tmp.getAbsolutePath () + "/does/not/exist")));
+			assertTrue ("expected some errors", conv.hasErrors ());
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace ();
+			fail ("converting failed");
+		}
+	}
 	/**
 	 * Initial tests.
 	 */

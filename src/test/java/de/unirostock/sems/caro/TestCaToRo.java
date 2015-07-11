@@ -128,6 +128,7 @@ public class TestCaToRo
 			assertFalse ("converting did not fail", conv.convertTo (tmp));
 			conv = new CaToRo (CaRoTests.CA_EXAMPLE1);
 			assertFalse ("converting did not fail", conv.convertTo (new File (tmp.getAbsolutePath () + "/does/not/exist")));
+			assertTrue ("expected some errors", conv.hasErrors ());
 		}
 		catch (IOException e)
 		{

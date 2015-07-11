@@ -178,6 +178,18 @@ public class TestMain
 
 		errContent.reset ();
 		outContent.reset ();
+		tmpBundle.delete ();
+		tmpOmex.delete ();
+		
+		// test invalid input
+		CaRo.main (new String[] { "--caro", "-i", CaRoTests.CA_EXAMPLE1.getAbsolutePath () + "-doesnotexists", "-o", tmpBundle.getAbsolutePath () });
+		// check there was an error
+		assertFalse ("did expect an error converting the non exising ca: " + errContent.toString (), errContent.toString ().length () == 0);
+
+		errContent.reset ();
+		outContent.reset ();
+		tmpBundle.delete ();
+		tmpOmex.delete ();
 		
 		// test invalid input
 		CaRo.main (new String[] { "--roca", "-i", CaRoTests.RO_EXAMPLE1.getAbsolutePath () + "-doesnotexists", "-o", tmpOmex.getAbsolutePath () });
