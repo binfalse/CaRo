@@ -11,10 +11,10 @@
  * CaRo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  * 
- * You should have received a copy of the GNU General Public License
- * along with CombineExt. If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with CaRo. If not, see <http://www.gnu.org/licenses/>.
  */
 package de.unirostock.sems.caro;
 
@@ -49,16 +49,21 @@ import de.unirostock.sems.caro.converters.RoToCa;
  */
 public class CaRo
 {
-	public static boolean DIE = true;
 	
-	public static String CARO_VERSION = "unknown";
+	/** Should we die in case of an error? */
+	public static boolean	DIE						= true;
 	
-	static {
+	/** The version of this library. */
+	public static String	CARO_VERSION	= "unknown";
+	
+	static
+	{
 		// read the current version of CaRo
-		InputStream in = CaRo.class.getResourceAsStream ("/caro-version.properties");
+		InputStream in = CaRo.class
+			.getResourceAsStream ("/caro-version.properties");
 		if (in != null)
 		{
-			Properties prop = new Properties();
+			Properties prop = new Properties ();
 			try
 			{
 				prop.load (in);
@@ -74,6 +79,7 @@ public class CaRo
 		}
 	}
 	
+	
 	/**
 	 * The main method to be called by the command line.
 	 * 
@@ -82,11 +88,6 @@ public class CaRo
 	 */
 	public static void main (String[] args)
 	{
-		//System.out.println (CARO_VERSION);
-		//new File ("/tmp/testro.zip").delete ();
-		//args = new String[] { "--caro", "-i", "test/CombineArchiveShowCase.omex", "-o", "/tmp/testro.zip" };
-		//args = new String[] { "--caro", "-i", "test/test-ca-contains-valid-evolution.omex", "-o", "/tmp/testro.zip" };
-		
 		Options options = new Options ();
 		
 		options
@@ -109,15 +110,14 @@ public class CaRo
 			line = parser.parse (options, args);
 			if (line.hasOption ("help"))
 			{
-				// initialise the member variable
 				help (options, null);
 				return;
 			}
 		}
 		catch (ParseException e)
 		{
-			help (options, "Parsing of command line options failed.  Reason: "
-				+ e.getMessage ());
+			help (options,
+				"Parsing of command line options failed.  Reason: " + e.getMessage ());
 			return;
 		}
 		
@@ -153,27 +153,11 @@ public class CaRo
 			help (options, "you need to either supply --roca or --caro");
 			return;
 		}
-		
-		/*if (!conv.openSourceContainer ())
-		{
-			help (options, "cannot read the conainer at " + in);
-			return;
-		}
-		if (!conv.convert ())
-		{
-			help (options, "cannot convert the container at " + in);
-			return;
-		}
-		if (!conv.write (out))
-		{
-			help (options, "cannot writ the container to " + out);
-			return;
-		}*/
 		conv.convertTo (out);
-
+		
 		if (conv.hasErrors ())
 			System.err.println ("There were errors!");
-
+		
 		if (conv.hasWarnings ())
 			System.err.println ("There were warnings!");
 		
@@ -184,6 +168,14 @@ public class CaRo
 	}
 	
 	
+	/**
+	 * USAGE.
+	 * 
+	 * @param options
+	 *          the options
+	 * @param err
+	 *          the error message
+	 */
 	public static void help (Options options, String err)
 	{
 		if (err != null && err.length () > 0)
