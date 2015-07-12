@@ -1,5 +1,20 @@
 /**
+ * Copyright © 2015 Martin Scharm <martin@binfalse.de>
  * 
+ * This file is part of CaRo.
+ * 
+ * CaRo is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * CaRo is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with CaRo. If not, see <http://www.gnu.org/licenses/>.
  */
 package de.unirostock.sems.caro.converters;
 
@@ -7,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,26 +45,31 @@ import de.unirostock.sems.cbarchive.meta.MetaDataObject;
 import de.unirostock.sems.xmlutils.tools.XmlTools;
 
 
+
 /**
  * The Class CaToRo converts combine archives into research objects.
- *
+ * 
  * @author Martin Scharm
  */
 public class CaToRo
-extends CaRoConverter
+	extends CaRoConverter
 {
 	
 	/**
 	 * The Constructor.
-	 *
-	 * @param combineArchive the combine archive
+	 * 
+	 * @param combineArchive
+	 *          the combine archive
 	 */
 	public CaToRo (File combineArchive)
 	{
 		super (combineArchive);
 	}
-
-	/* (non-Javadoc)
+	
+	
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.unirostock.sems.caro.CaRoConverter#openSourceContainer()
 	 */
 	@Override
@@ -61,19 +80,27 @@ extends CaRoConverter
 			combineArchive = new CombineArchive (sourceFile);
 			List<String> errs = combineArchive.getErrors ();
 			for (String s : errs)
-				notifications.add (new  CaRoNotification (CaRoNotification.SERVERITY_WARN, "reading archive: " + s));
+				notifications.add (new CaRoNotification (
+					CaRoNotification.SERVERITY_WARN, "reading archive: " + s));
 			return true;
 		}
 		catch (IOException | JDOMException | ParseException
 			| CombineArchiveException e)
 		{
-			LOGGER.warn (e, "wasn't able to read the combine archive at ", sourceFile);
-			notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_ERROR, "wasn't able to read the combine archive at " + sourceFile + " : " + e.getMessage ()));
+			LOGGER
+				.warn (e, "wasn't able to read the combine archive at ", sourceFile);
+			notifications.add (new CaRoNotification (
+				CaRoNotification.SERVERITY_ERROR,
+				"wasn't able to read the combine archive at " + sourceFile + " : "
+					+ e.getMessage ()));
 		}
 		return false;
 	}
-
-	/* (non-Javadoc)
+	
+	
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.unirostock.sems.caro.CaRoConverter#closeSourceContainer()
 	 */
 	@Override
@@ -89,12 +116,17 @@ extends CaRoConverter
 		catch (IOException e)
 		{
 			LOGGER.error (e, "wasn't able to close combine archive ", sourceFile);
-			notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN, "wasn't able to close the combine archive at " + sourceFile + " : " + e.getMessage ()));
+			notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN,
+				"wasn't able to close the combine archive at " + sourceFile + " : "
+					+ e.getMessage ()));
 		}
 		return false;
 	}
-
-	/* (non-Javadoc)
+	
+	
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.unirostock.sems.caro.CaRoConverter#convert()
 	 */
 	@Override
@@ -105,7 +137,8 @@ extends CaRoConverter
 			// create ro infrastructure
 			researchObject = Bundles.createBundle ();
 			Manifest roManifest = researchObject.getManifest ();
-			Path annotationsDir = researchObject.getRoot().resolve("/.ro/annotaions");
+			Path annotationsDir = researchObject.getRoot ().resolve (
+				"/.ro/annotaions");
 			List<PathAnnotation> annotations = roManifest.getAnnotations ();
 			tagConvertedContainer (annotations);
 			// read the ca
@@ -117,7 +150,8 @@ extends CaRoConverter
 				File tmp = File.createTempFile ("CaRoFromCa", "tmp");
 				tmp.deleteOnExit ();
 				entry.extractFile (tmp);
-				Path target = researchObject.getRoot ().resolve (entry.getEntityPath ());
+				Path target = researchObject.getRoot ()
+					.resolve (entry.getEntityPath ());
 				
 				// check some special files
 				if (!includeFile (target, entry))
@@ -130,7 +164,9 @@ extends CaRoConverter
 				// special case for evolution in turtle format
 				if (target.startsWith ("/.ro/evolution.ttl"))
 				{
-					notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_NOTE, "adding history /.ro/evolution.ttl"));
+					notifications.add (new CaRoNotification (
+						CaRoNotification.SERVERITY_NOTE,
+						"adding history /.ro/evolution.ttl"));
 					List<Path> hist = new ArrayList<Path> ();
 					hist.add (target);
 					roManifest.setHistory (hist);
@@ -140,7 +176,8 @@ extends CaRoConverter
 					// handle meta date
 					PathMetadata pmd = roManifest.getAggregation (target);
 					pmd.setConformsTo (entry.getFormat ());
-					annotationNumber = handleMetaData (target, entry.getDescriptions (), annotationsDir, annotationNumber, annotations);
+					annotationNumber = handleMetaData (target, entry.getDescriptions (),
+						annotationsDir, annotationNumber, annotations);
 					// is this a main entry?
 					if (mainEntries.contains (entry))
 						setMainEntry (target, annotations);
@@ -150,17 +187,24 @@ extends CaRoConverter
 		}
 		catch (IOException e)
 		{
-			LOGGER.warn (e, "wasn't able to convert combine archive at ", sourceFile, " into a research object");
-			notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_ERROR, "wasn't able to convert combine archive at " + sourceFile + " into a research object : " + e.getMessage ()));
+			LOGGER.warn (e, "wasn't able to convert combine archive at ", sourceFile,
+				" into a research object");
+			notifications.add (new CaRoNotification (
+				CaRoNotification.SERVERITY_ERROR,
+				"wasn't able to convert combine archive at " + sourceFile
+					+ " into a research object : " + e.getMessage ()));
 		}
 		return false;
 	}
 	
+	
 	/**
 	 * Add an annotation signalling that this is the main entry.
-	 *
-	 * @param target the path to the file
-	 * @param annotations the list of existing annotations
+	 * 
+	 * @param target
+	 *          the path to the file
+	 * @param annotations
+	 *          the list of existing annotations
 	 */
 	private void setMainEntry (Path target, List<PathAnnotation> annotations)
 	{
@@ -169,18 +213,25 @@ extends CaRoConverter
 		tag.setContent (URI_MAIN_ENTRY);
 		annotations.add (tag);
 	}
-
+	
+	
 	/**
 	 * Handle meta data of a ca entry.
-	 *
-	 * @param target the path to the file in the ro
-	 * @param meta the meta data of the ca entry
-	 * @param annotationsDir the annotations dir in the ro
-	 * @param annotationNumber the annotation number
-	 * @param annotations the list of existing annotations
+	 * 
+	 * @param target
+	 *          the path to the file in the ro
+	 * @param meta
+	 *          the meta data of the ca entry
+	 * @param annotationsDir
+	 *          the annotations dir in the ro
+	 * @param annotationNumber
+	 *          the annotation number
+	 * @param annotations
+	 *          the list of existing annotations
 	 * @return the int
 	 */
-	private int handleMetaData (Path target, List<MetaDataObject> meta, Path annotationsDir, int annotationNumber, List<PathAnnotation> annotations)
+	private int handleMetaData (Path target, List<MetaDataObject> meta,
+		Path annotationsDir, int annotationNumber, List<PathAnnotation> annotations)
 	{
 		for (MetaDataObject m : meta)
 		{
@@ -191,8 +242,10 @@ extends CaRoConverter
 			{
 				if (!Files.exists (annotationsDir))
 					Files.createDirectories (annotationsDir);
-				Path file = annotationsDir.resolve("omex-conversion-" + ++annotationNumber);
-				Bundles.setStringValue(file, XmlTools.prettyPrintDocument (new Document (rdf)));
+				Path file = annotationsDir.resolve ("omex-conversion-"
+					+ ++annotationNumber);
+				Bundles.setStringValue (file,
+					XmlTools.prettyPrintDocument (new Document (rdf)));
 				PathAnnotation pa = new PathAnnotation ();
 				pa.setAbout (target);
 				pa.setContent (file);
@@ -203,21 +256,28 @@ extends CaRoConverter
 			}
 			catch (IOException e)
 			{
-				LOGGER.error (e, "was not able to convert annotation for entry ", m.getAbout ());
-				notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN, 
-					"skipping conversion of annotation for " + m.getAbout () + " -- reason: " + e.getMessage ()));
+				LOGGER.error (e, "was not able to convert annotation for entry ",
+					m.getAbout ());
+				notifications.add (new CaRoNotification (
+					CaRoNotification.SERVERITY_WARN,
+					"skipping conversion of annotation for " + m.getAbout ()
+						+ " -- reason: " + e.getMessage ()));
 			}
 		}
 		return annotationNumber;
 	}
 	
+	
 	/**
 	 * Tag an annotation to indicate that it was created by conversion.
-	 *
-	 * @param pa the pa
-	 * @param annotations the list of existing annotations
+	 * 
+	 * @param pa
+	 *          the pa
+	 * @param annotations
+	 *          the list of existing annotations
 	 */
-	private void tagAnnotation (PathAnnotation pa, List<PathAnnotation> annotations)
+	private void tagAnnotation (PathAnnotation pa,
+		List<PathAnnotation> annotations)
 	{
 		PathAnnotation tag = new PathAnnotation ();
 		tag.setAbout (pa.getUri ());
@@ -225,10 +285,12 @@ extends CaRoConverter
 		annotations.add (tag);
 	}
 	
+	
 	/**
 	 * Tag the container to indicate that it was created by conversion..
-	 *
-	 * @param annotations the list of existing annotations
+	 * 
+	 * @param annotations
+	 *          the list of existing annotations
 	 */
 	private void tagConvertedContainer (List<PathAnnotation> annotations)
 	{
@@ -240,10 +302,12 @@ extends CaRoConverter
 	
 	
 	/**
-	 * Should we include a certain file?
-	 *
-	 * @param target the file in question
-	 * @param entry the corresponding archive entry
+	 * Should we include a certain file?.
+	 * 
+	 * @param target
+	 *          the file in question
+	 * @param entry
+	 *          the corresponding archive entry
 	 * @return true, if file can be included
 	 */
 	private boolean includeFile (Path target, ArchiveEntry entry)
@@ -251,21 +315,29 @@ extends CaRoConverter
 		for (String path : RO_RESTRICTIONS)
 			if (target.startsWith (path))
 			{
-				notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN, 
-					"dropping " + path + " as this is a special file in research objects!"));
+				notifications.add (new CaRoNotification (
+					CaRoNotification.SERVERITY_WARN, "dropping " + path
+						+ " as this is a special file in research objects!"));
 				return false;
 			}
-		// special case for the evolution: if it's stored in /.ro/evolution.ttl and of type URI_TURTLE_MIME then we assume it's a valid research object evolution.ttl
-		if (target.startsWith ("/.ro/evolution.ttl") && !entry.getFormat ().equals (URI_TURTLE_MIME))
+		// special case for the evolution: if it's stored in /.ro/evolution.ttl and
+		// of type URI_TURTLE_MIME then we assume it's a valid research object
+		// evolution.ttl
+		if (target.startsWith ("/.ro/evolution.ttl")
+			&& !entry.getFormat ().equals (URI_TURTLE_MIME))
 		{
-			notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN, 
-				"dropping /.ro/evolution.ttl as this is a special file in research objects!"));
+			notifications
+				.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN,
+					"dropping /.ro/evolution.ttl as this is a special file in research objects!"));
 			return false;
 		}
 		return true;
 	}
-
-	/* (non-Javadoc)
+	
+	
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.unirostock.sems.caro.CaRoConverter#write(java.io.File)
 	 */
 	@Override
@@ -275,22 +347,27 @@ extends CaRoConverter
 			return false;
 		try
 		{
-			Bundles.closeAndSaveBundle(researchObject, target.toPath ());
+			Bundles.closeAndSaveBundle (researchObject, target.toPath ());
 			return true;
 		}
 		catch (IOException e)
 		{
 			LOGGER.warn (e, "wasn't able to save research object to ", target);
-			notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_ERROR, "wasn't able to save research object to " + target + " : " + e.getMessage ()));
+			notifications.add (new CaRoNotification (
+				CaRoNotification.SERVERITY_ERROR,
+				"wasn't able to save research object to " + target + " : "
+					+ e.getMessage ()));
 		}
 		return false;
 	}
 	
+	
 	/**
 	 * Returns the research object.
 	 * 
-	 * Will be <code>null</code> unless you called {@link de.unirostock.sems.caro.CaRoConverter#convert()}.
-	 *
+	 * Will be <code>null</code> unless you called
+	 * {@link de.unirostock.sems.caro.CaRoConverter#convert()}.
+	 * 
 	 * @return the converted research object
 	 */
 	public Bundle getResearchObject ()

@@ -1,15 +1,28 @@
 /**
+ * Copyright © 2015 Martin Scharm <martin@binfalse.de>
  * 
+ * This file is part of CaRo.
+ * 
+ * CaRo is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * CaRo is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with CaRo. If not, see <http://www.gnu.org/licenses/>.
  */
 package de.unirostock.sems.caro.converters;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -26,8 +39,6 @@ import org.apache.taverna.robundle.manifest.PathAnnotation;
 import org.apache.taverna.robundle.manifest.PathMetadata;
 import org.jdom2.JDOMException;
 
-import com.hp.hpl.jena.vocabulary.VCARD;
-
 import de.binfalse.bflog.LOGGER;
 import de.unirostock.sems.caro.CaRoConverter;
 import de.unirostock.sems.caro.CaRoNotification;
@@ -43,14 +54,22 @@ import de.unirostock.sems.cbext.Formatizer;
 
 
 /**
- * @author Martin Scharm
+ * The Class RoToCa converts research objects to combine archives.
  *
+ * @author Martin Scharm
  */
 public class RoToCa
 	extends CaRoConverter
 {
+	
+	/** The temporary location. */
 	private File temporaryLocation;
 	
+	/**
+	 * Instantiates a new converter.
+	 *
+	 * @param researchObject the research object
+	 */
 	public RoToCa (File researchObject)
 	{
 		super (researchObject);
@@ -252,6 +271,15 @@ public class RoToCa
 	
 	
 	
+	/**
+	 * Handle annotations.
+	 *
+	 * @param file the file
+	 * @param pmd the pmd
+	 * @param annotations the annotations
+	 * @param entry the entry
+	 * @param archiveEntries the archive entries
+	 */
 	private void handleAnnotations (Path file, PathMetadata pmd, List<PathAnnotation> annotations, ArchiveEntry entry, HashMap<String, ArchiveEntry> archiveEntries)
 	{
 		List<PathAnnotation> curAnnotations = getAnnotations (pmd, annotations);
@@ -294,6 +322,13 @@ public class RoToCa
 		}
 	}
 
+	/**
+	 * Annotation has omex tag.
+	 *
+	 * @param annotation the annotation
+	 * @param annotations the annotations
+	 * @return true, if successful
+	 */
 	private boolean annotationHasOmexTag (PathAnnotation annotation,
 		List<PathAnnotation> annotations)
 	{
@@ -306,6 +341,13 @@ public class RoToCa
 		return false;
 	}
 
+	/**
+	 * Gets the annotations.
+	 *
+	 * @param pmd the pmd
+	 * @param annotations the annotations
+	 * @return the annotations
+	 */
 	private List<PathAnnotation> getAnnotations (PathMetadata pmd,
 		List<PathAnnotation> annotations)
 	{
@@ -332,8 +374,9 @@ public class RoToCa
 		
 		return false;
 	}
+	
 	/**
-	 * Should we include a certain file?
+	 * Should we include a certain file?.
 	 *
 	 * @param target the file in question
 	 * @return true, if file can be included

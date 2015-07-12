@@ -11,14 +11,16 @@
  * CaRo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  * 
- * You should have received a copy of the GNU General Public License
- * along with CombineExt. If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with CaRo. If not, see <http://www.gnu.org/licenses/>.
  */
 package de.unirostock.sems.caro;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -40,7 +42,6 @@ import org.junit.Test;
  */
 public class TestMain
 {
-
 	
 	/** The out content. */
 	private ByteArrayOutputStream	outContent;
@@ -48,7 +49,8 @@ public class TestMain
 	/** The err content. */
 	private ByteArrayOutputStream	errContent;
 	
-	private static PrintStream out, err;
+	private static PrintStream		out, err;
+	
 	
 	/**
 	 * Test caro.
@@ -58,11 +60,11 @@ public class TestMain
 	{
 		assertTrue ("combine archive showcase does not exist",
 			CaRoTests.CA_EXAMPLE1.exists ());
-		assertTrue ("document object does not exist", CaRoTests.RO_EXAMPLE1.exists ());
+		assertTrue ("document object does not exist",
+			CaRoTests.RO_EXAMPLE1.exists ());
 		out = System.out;
 		err = System.err;
 	}
-
 	
 	
 	/**
@@ -71,8 +73,8 @@ public class TestMain
 	@Before
 	public void setUpStreams ()
 	{
-		outContent	= new ByteArrayOutputStream ();
-		errContent	= new ByteArrayOutputStream ();
+		outContent = new ByteArrayOutputStream ();
+		errContent = new ByteArrayOutputStream ();
 		System.setOut (new PrintStream (outContent));
 		System.setErr (new PrintStream (errContent));
 	}
@@ -105,7 +107,7 @@ public class TestMain
 		assertTrue ("expected an error", errContent.toString ().length () > 5);
 		
 		// check help
-		String [] lines = outContent.toString ().split ("\n");
+		String[] lines = outContent.toString ().split ("\n");
 		assertTrue ("expected more options on help page", 6 < lines.length);
 		
 		errContent.reset ();
@@ -119,7 +121,10 @@ public class TestMain
 		errContent.reset ();
 		outContent.reset ();
 		
-		CaRo.main (new String[] { "--caro", "-i", CaRoTests.CA_EXAMPLE1.getAbsolutePath (), "--roca", "-o", "who-cares.ro" });
+		CaRo
+			.main (new String[] { "--caro", "-i",
+				CaRoTests.CA_EXAMPLE1.getAbsolutePath (), "--roca", "-o",
+				"who-cares.ro" });
 		assertTrue ("expected an error", errContent.toString ().length () > 5);
 		lines = outContent.toString ().split ("\n");
 		assertTrue ("expected more options on help page", 6 < lines.length);
@@ -127,11 +132,15 @@ public class TestMain
 		errContent.reset ();
 		outContent.reset ();
 		
-		CaRo.main (new String[] { "--caro", "-i", CaRoTests.CA_EXAMPLE1.getAbsolutePath (), "--help", "-o", "who-cares.ro" });
+		CaRo
+			.main (new String[] { "--caro", "-i",
+				CaRoTests.CA_EXAMPLE1.getAbsolutePath (), "--help", "-o",
+				"who-cares.ro" });
 		assertTrue ("expected no error", errContent.toString ().length () == 0);
 		lines = outContent.toString ().split ("\n");
 		assertTrue ("expected more options on help page", 6 < lines.length);
 	}
+	
 	
 	/**
 	 * Test converting.
@@ -154,48 +163,66 @@ public class TestMain
 			fail ("failed to create temp files: " + e.getMessage ());
 		}
 		
-		CaRo.main (new String[] { "--caro", "-i", CaRoTests.CA_EXAMPLE1.getAbsolutePath (), "-o", tmpBundle.getAbsolutePath () });
+		CaRo.main (new String[] { "--caro", "-i",
+			CaRoTests.CA_EXAMPLE1.getAbsolutePath (), "-o",
+			tmpBundle.getAbsolutePath () });
 		// check there was an error
-		assertTrue ("did not expect an error converting the bundle: " + errContent.toString (), errContent.toString ().length () == 0);
-
+		assertTrue (
+			"did not expect an error converting the bundle: "
+				+ errContent.toString (), errContent.toString ().length () == 0);
+		
 		// do not overwrite file!
-		CaRo.main (new String[] { "--caro", "-i", CaRoTests.CA_EXAMPLE1.getAbsolutePath (), "-o", tmpBundle.getAbsolutePath () });
+		CaRo.main (new String[] { "--caro", "-i",
+			CaRoTests.CA_EXAMPLE1.getAbsolutePath (), "-o",
+			tmpBundle.getAbsolutePath () });
 		// check there was an error
 		assertTrue ("expected an error", errContent.toString ().length () > 5);
-
+		
 		errContent.reset ();
 		outContent.reset ();
 		
 		// test the other way around
-		CaRo.main (new String[] { "--roca", "-i", CaRoTests.RO_EXAMPLE1.getAbsolutePath (), "-o", tmpOmex.getAbsolutePath () });
+		CaRo.main (new String[] { "--roca", "-i",
+			CaRoTests.RO_EXAMPLE1.getAbsolutePath (), "-o",
+			tmpOmex.getAbsolutePath () });
 		// check there was an error
-		assertTrue ("did not expect an error converting the ro: " + errContent.toString (), errContent.toString ().length () == 0);
-
+		assertTrue (
+			"did not expect an error converting the ro: " + errContent.toString (),
+			errContent.toString ().length () == 0);
+		
 		// do not overwrite file!
-		CaRo.main (new String[] { "--roca", "-i", CaRoTests.RO_EXAMPLE1.getAbsolutePath (), "-o", tmpOmex.getAbsolutePath () });
+		CaRo.main (new String[] { "--roca", "-i",
+			CaRoTests.RO_EXAMPLE1.getAbsolutePath (), "-o",
+			tmpOmex.getAbsolutePath () });
 		// check there was an error
 		assertTrue ("expected an error", errContent.toString ().length () > 5);
-
+		
 		errContent.reset ();
 		outContent.reset ();
 		tmpBundle.delete ();
 		tmpOmex.delete ();
 		
 		// test invalid input
-		CaRo.main (new String[] { "--caro", "-i", CaRoTests.CA_EXAMPLE1.getAbsolutePath () + "-doesnotexists", "-o", tmpBundle.getAbsolutePath () });
+		CaRo.main (new String[] { "--caro", "-i",
+			CaRoTests.CA_EXAMPLE1.getAbsolutePath () + "-doesnotexists", "-o",
+			tmpBundle.getAbsolutePath () });
 		// check there was an error
-		assertFalse ("did expect an error converting the non exising ca: " + errContent.toString (), errContent.toString ().length () == 0);
-
+		assertFalse ("did expect an error converting the non exising ca: "
+			+ errContent.toString (), errContent.toString ().length () == 0);
+		
 		errContent.reset ();
 		outContent.reset ();
 		tmpBundle.delete ();
 		tmpOmex.delete ();
 		
 		// test invalid input
-		CaRo.main (new String[] { "--roca", "-i", CaRoTests.RO_EXAMPLE1.getAbsolutePath () + "-doesnotexists", "-o", tmpOmex.getAbsolutePath () });
+		CaRo.main (new String[] { "--roca", "-i",
+			CaRoTests.RO_EXAMPLE1.getAbsolutePath () + "-doesnotexists", "-o",
+			tmpOmex.getAbsolutePath () });
 		// check there was an error
-		assertFalse ("did expect an error converting the non exising ro: " + errContent.toString (), errContent.toString ().length () == 0);
-
+		assertFalse ("did expect an error converting the non exising ro: "
+			+ errContent.toString (), errContent.toString ().length () == 0);
+		
 		tmpBundle.delete ();
 		tmpOmex.delete ();
 	}
@@ -207,15 +234,21 @@ public class TestMain
 	@Test
 	public void testStreams ()
 	{
-		assertFalse ("sys.err collection did not work properly", errContent.toString ().length () > 0);
-		assertFalse ("sys.out collection did not work properly", outContent.toString ().length () > 0);
+		assertFalse ("sys.err collection did not work properly", errContent
+			.toString ().length () > 0);
+		assertFalse ("sys.out collection did not work properly", outContent
+			.toString ().length () > 0);
 		System.out.print ("testOut");
 		System.err.print ("testErr");
-		assertTrue ("sys.err collection did not work properly", errContent.toString ().equals ("testErr"));
-		assertTrue ("sys.out collection did not work properly", outContent.toString ().equals ("testOut"));
+		assertTrue ("sys.err collection did not work properly", errContent
+			.toString ().equals ("testErr"));
+		assertTrue ("sys.out collection did not work properly", outContent
+			.toString ().equals ("testOut"));
 		errContent.reset ();
 		outContent.reset ();
-		assertFalse ("sys.err collection did not work properly", errContent.toString ().length () > 0);
-		assertFalse ("sys.out collection did not work properly", outContent.toString ().length () > 0);
+		assertFalse ("sys.err collection did not work properly", errContent
+			.toString ().length () > 0);
+		assertFalse ("sys.out collection did not work properly", outContent
+			.toString ().length () > 0);
 	}
 }

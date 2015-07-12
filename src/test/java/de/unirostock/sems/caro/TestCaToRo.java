@@ -11,14 +11,17 @@
  * CaRo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  * 
- * You should have received a copy of the GNU General Public License
- * along with CombineExt. If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with CaRo. If not, see <http://www.gnu.org/licenses/>.
  */
 package de.unirostock.sems.caro;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,7 +53,7 @@ public class TestCaToRo
 	
 	/** A temporary folder. */
 	@Rule
-	public TemporaryFolder		folder			= new TemporaryFolder ();
+	public TemporaryFolder	folder	= new TemporaryFolder ();
 	
 	
 	/**
@@ -65,17 +68,20 @@ public class TestCaToRo
 			tmp.delete ();
 			CaRoConverter conv = new CaToRo (CaRoTests.CA_EXAMPLE1);
 			assertTrue ("converting failed", conv.convertTo (tmp));
-
+			
 			// compare archives
 			CombineArchive sourceCa = new CombineArchive (CaRoTests.CA_EXAMPLE1);
 			Bundle convertedBundle = Bundles.openBundleReadOnly (tmp.toPath ());
-			CaRoTests.ComparisonResult comparison = CaRoTests.compareContainers (sourceCa, convertedBundle);
-			assertEquals ("conversion resulted in diff in entries (ca only): " + comparison, 0, comparison.numCaOnly);
-			assertEquals ("conversion resulted in diff in entries (ro only): " + comparison, 0, comparison.numRoOnly);
-			assertEquals ("conversion resulted in diff in entries (ro remote): " + comparison, 0, comparison.numRoRemote);
+			CaRoTests.ComparisonResult comparison = CaRoTests.compareContainers (
+				sourceCa, convertedBundle);
+			assertEquals ("conversion resulted in diff in entries (ca only): "
+				+ comparison, 0, comparison.numCaOnly);
+			assertEquals ("conversion resulted in diff in entries (ro only): "
+				+ comparison, 0, comparison.numRoOnly);
+			assertEquals ("conversion resulted in diff in entries (ro remote): "
+				+ comparison, 0, comparison.numRoRemote);
 			sourceCa.close ();
 			convertedBundle.close ();
-
 			
 			// try vice versa
 			conv = new RoToCa (tmp);
@@ -85,24 +91,34 @@ public class TestCaToRo
 			convertedBundle = Bundles.openBundleReadOnly (tmp.toPath ());
 			CombineArchive convertedCa = new CombineArchive (tmp2);
 			comparison = CaRoTests.compareContainers (convertedCa, convertedBundle);
-			assertEquals ("conversion resulted in diff in entries (ca only): " + comparison, 0, comparison.numCaOnly);
-			assertEquals ("conversion resulted in diff in entries (ro only): " + comparison, 0, comparison.numRoOnly);
-			assertEquals ("conversion resulted in diff in entries (ro remote): " + comparison, 0, comparison.numRoRemote);
+			assertEquals ("conversion resulted in diff in entries (ca only): "
+				+ comparison, 0, comparison.numCaOnly);
+			assertEquals ("conversion resulted in diff in entries (ro only): "
+				+ comparison, 0, comparison.numRoOnly);
+			assertEquals ("conversion resulted in diff in entries (ro remote): "
+				+ comparison, 0, comparison.numRoRemote);
 			convertedCa.close ();
 			convertedBundle.close ();
 			
-			CaComparisonResult caComparison = CaRoTests.compareContainers (sourceCa, convertedCa);
-			assertEquals ("double conversion resulted in diff in entries (ca1 only): " + caComparison, 0, caComparison.numCa1Only);
-			assertEquals ("double conversion resulted in diff in entries (ca2 only): " + caComparison, 0, caComparison.numCa2Only);
-			assertEquals ("double conversion resulted in diff in meta: " + caComparison, 0, caComparison.numMetaDiff);
-			assertEquals ("double conversion resulted in diff in main files: " + caComparison, 0, caComparison.numMainDiff);
-			
+			CaComparisonResult caComparison = CaRoTests.compareContainers (sourceCa,
+				convertedCa);
+			assertEquals (
+				"double conversion resulted in diff in entries (ca1 only): "
+					+ caComparison, 0, caComparison.numCa1Only);
+			assertEquals (
+				"double conversion resulted in diff in entries (ca2 only): "
+					+ caComparison, 0, caComparison.numCa2Only);
+			assertEquals ("double conversion resulted in diff in meta: "
+				+ caComparison, 0, caComparison.numMetaDiff);
+			assertEquals ("double conversion resulted in diff in main files: "
+				+ caComparison, 0, caComparison.numMainDiff);
 			
 			// System.out.println (tmp + " -- " + tmp2);
 			tmp.delete ();
 			tmp2.delete ();
 		}
-		catch (IOException | JDOMException | ParseException | CombineArchiveException e)
+		catch (IOException | JDOMException | ParseException
+			| CombineArchiveException e)
 		{
 			e.printStackTrace ();
 			fail ("converting failed");
@@ -112,10 +128,11 @@ public class TestCaToRo
 	
 	/**
 	 * Initial tests.
-	 * @throws CombineArchiveException 
-	 * @throws ParseException 
-	 * @throws JDOMException 
-	 * @throws IOException 
+	 * 
+	 * @throws CombineArchiveException
+	 * @throws ParseException
+	 * @throws JDOMException
+	 * @throws IOException
 	 */
 	@Test
 	public void testRoToRo ()
@@ -127,7 +144,8 @@ public class TestCaToRo
 			CaRoConverter conv = new CaToRo (CaRoTests.RO_EXAMPLE1);
 			assertFalse ("converting did not fail", conv.convertTo (tmp));
 			conv = new CaToRo (CaRoTests.CA_EXAMPLE1);
-			assertFalse ("converting did not fail", conv.convertTo (new File (tmp.getAbsolutePath () + "/does/not/exist")));
+			assertFalse ("converting did not fail",
+				conv.convertTo (new File (tmp.getAbsolutePath () + "/does/not/exist")));
 			assertTrue ("expected some errors", conv.hasErrors ());
 		}
 		catch (IOException e)
@@ -136,6 +154,7 @@ public class TestCaToRo
 			fail ("converting failed");
 		}
 	}
+	
 	
 	/**
 	 * Test conflicts.
@@ -149,9 +168,8 @@ public class TestCaToRo
 			tmp.delete ();
 			CaRoConverter conv = new CaToRo (CaRoTests.CA_EXAMPLE_CONTAINS_EVOLUTION);
 			assertTrue ("converting did fail", conv.convertTo (tmp));
-			assertTrue ("expected some notifications", conv.getNotifications ().size () > 0);
-			
-			
+			assertTrue ("expected some notifications", conv.getNotifications ()
+				.size () > 0);
 			
 			conv = new CaToRo (CaRoTests.CA_EXAMPLE_CONTAINS_MANIFEST);
 			assertTrue ("converting did fail", conv.convertTo (tmp));
@@ -163,6 +181,5 @@ public class TestCaToRo
 			fail ("converting failed");
 		}
 	}
-	
 	
 }
