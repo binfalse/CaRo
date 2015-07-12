@@ -40,6 +40,8 @@ import de.unirostock.sems.caro.converters.RoToCa;
 import de.unirostock.sems.cbarchive.ArchiveEntry;
 import de.unirostock.sems.cbarchive.CombineArchive;
 import de.unirostock.sems.cbarchive.CombineArchiveException;
+import de.unirostock.sems.cbarchive.meta.OmexMetaDataObject;
+import de.unirostock.sems.cbarchive.meta.omex.VCard;
 
 
 
@@ -179,7 +181,7 @@ public class TestRoToCa
 	{
 		try
 		{
-			File tmp = File.createTempFile ("testCaToRo", ".bundle");
+			File tmp = File.createTempFile ("testCaToRo", ".omex");
 			tmp.delete ();
 			RoToCa conv = new RoToCa (CaRoTests.RO_EXAMPLE_CONTAINS_METATESTS);
 			assertTrue ("converting did fail", conv.convertTo (tmp));
@@ -190,10 +192,9 @@ public class TestRoToCa
 				.getNotifications ().size ());
 			
 			CombineArchive ca = conv.getCombineArchive ();
-			
 			assertEquals ("expected exactly 2 main entries", 2, ca.getMainEntries ()
 				.size ());
-			assertEquals ("expected exactly 4 entries", 4, ca.getEntries ().size ());
+			assertEquals ("expected exactly 7 entries", 7, ca.getEntries ().size ());
 			
 			ArchiveEntry file1 = ca.getEntry ("file1");
 			assertNotNull ("expected to find a file1", file1);
@@ -204,6 +205,9 @@ public class TestRoToCa
 			assertNotNull ("expected to find a file2", file2);
 			assertEquals ("expected to get exactly 1 meta entries for file 2", 1,
 				file2.getDescriptions ().size ());
+			VCard vcard = ((OmexMetaDataObject) file2.getDescriptions ().get (0)).getOmexDescription ().getCreators ().get (0);
+			assertEquals ("expected different given name", "Martin", vcard.getGivenName ());
+			assertEquals ("expected different family name", "Scharm", vcard.getFamilyName ());
 			
 			ArchiveEntry file3 = ca.getEntry ("./file3");
 			assertNotNull ("expected to find a file3", file3);
@@ -215,9 +219,22 @@ public class TestRoToCa
 			assertEquals ("expected to get exactly 2 meta entries for file 4", 2,
 				file4.getDescriptions ().size ());
 			
-			// for 2 and 3 we should have additional meta
+			// there should be 1 copied annotation and and 2 converted
+			assertEquals ("expected 2 converted annotations", 2, ca.getEntriesWithFormat (CaRoConverter.URI_RO_CONV_ANNOTATION).size ());
+			assertEquals ("expected 1 copied annotation", 1, ca.getEntriesWithFormat (CaRoConverter.URI_RO_COPY_ANNOTATION).size ());
+			ca.close ();
 			
-			System.out.println (tmp);
+			// reconvert
+			CaToRo conv2 = new CaToRo (tmp);
+			File tmp2 = File.createTempFile ("testCaToRo", ".bundle");
+			tmp2.delete ();
+			assertTrue ("converting did fail", conv2.convertTo (tmp2));
+			Bundle ro = conv2.getResearchObject ();
+			
+			assertEquals ("expected 4 aggregates", 4, ro.getManifest ().getAggregates ().size ());
+			assertEquals ("expected 11 annotations", 11, ro.getManifest ().getAnnotations ().size ());
+			
+			System.out.println (tmp + " -- " + tmp2);
 		}
 		catch (IOException e)
 		{

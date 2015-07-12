@@ -19,15 +19,20 @@
 package de.unirostock.sems.caro.converters;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.taverna.robundle.Bundle;
 import org.apache.taverna.robundle.Bundles;
+import org.apache.taverna.robundle.manifest.Agent;
 import org.apache.taverna.robundle.manifest.Manifest;
 import org.apache.taverna.robundle.manifest.PathAnnotation;
 import org.apache.taverna.robundle.manifest.PathMetadata;
@@ -42,6 +47,9 @@ import de.unirostock.sems.cbarchive.ArchiveEntry;
 import de.unirostock.sems.cbarchive.CombineArchive;
 import de.unirostock.sems.cbarchive.CombineArchiveException;
 import de.unirostock.sems.cbarchive.meta.MetaDataObject;
+import de.unirostock.sems.cbarchive.meta.OmexMetaDataObject;
+import de.unirostock.sems.cbarchive.meta.omex.OmexDescription;
+import de.unirostock.sems.cbarchive.meta.omex.VCard;
 import de.unirostock.sems.xmlutils.tools.XmlTools;
 
 
@@ -138,7 +146,7 @@ public class CaToRo
 			researchObject = Bundles.createBundle ();
 			Manifest roManifest = researchObject.getManifest ();
 			Path annotationsDir = researchObject.getRoot ().resolve (
-				"/.ro/annotaions");
+				"/.ro/annotations");
 			List<PathAnnotation> annotations = roManifest.getAnnotations ();
 			tagConvertedContainer (annotations);
 			// read the ca
@@ -146,6 +154,13 @@ public class CaToRo
 			int annotationNumber = 0;
 			for (ArchiveEntry entry : combineArchive.getEntries ())
 			{
+				// check special annotations
+				if (entry.getFormat ().equals (URI_RO_CONV_ANNOTATION) || entry.getFormat ().equals (URI_RO_COPY_ANNOTATION))
+				{
+					if (handleConvertedAnnotation (entry, annotations))
+						continue;
+				}
+				
 				// consider copying the entries
 				File tmp = File.createTempFile ("CaRoFromCa", "tmp");
 				tmp.deleteOnExit ();
@@ -176,7 +191,7 @@ public class CaToRo
 					// handle meta date
 					PathMetadata pmd = roManifest.getAggregation (target);
 					pmd.setConformsTo (entry.getFormat ());
-					annotationNumber = handleMetaData (target, entry.getDescriptions (),
+					annotationNumber = handleMetaData (pmd, target, entry.getDescriptions (),
 						annotationsDir, annotationNumber, annotations);
 					// is this a main entry?
 					if (mainEntries.contains (entry))
@@ -198,6 +213,62 @@ public class CaToRo
 	}
 	
 	
+	private boolean handleConvertedAnnotation (ArchiveEntry entry, List<PathAnnotation> annotations)
+	{
+		if (entry.getFormat ().equals (URI_RO_CONV_ANNOTATION))
+		{
+			// reintegrate this annotation
+			try
+			{
+				File tmp = File.createTempFile ("CaRoFromCa", "ConvAnnotation");
+				entry.extractFile (tmp);
+				Properties properties = new Properties();
+				FileInputStream in = new FileInputStream(tmp);
+				properties.load(in);
+				in.close();
+				
+				PathAnnotation pa = new PathAnnotation ();
+				pa.setAbout (new URI ((String) properties.get ("header")));
+				pa.setContent (new URI ((String) properties.get ("body")));
+				
+				annotations.add (pa);
+				return true;
+			}
+			catch (IOException | URISyntaxException e)
+			{
+				LOGGER.warn (e, "wasn't able to reintegrate converted annotation ", entry.getEntityPath ());
+				notifications.add (new CaRoNotification (
+					CaRoNotification.SERVERITY_WARN,
+					"wasn't able to reintegrate converted annotation " + entry.getEntityPath () + " : " + e.getMessage ()));
+			}
+		}
+		else if (entry.getFormat ().equals (URI_RO_COPY_ANNOTATION))
+		{
+			// reintegrate the file
+			try
+			{
+				File tmp = File.createTempFile ("CaRoFromCa", "tmp");
+				tmp.deleteOnExit ();
+				entry.extractFile (tmp);
+				Path target = researchObject.getRoot ()
+					.resolve (entry.getEntityPath ());
+				// copy entry
+				Files.createDirectories (target.getParent ());
+				Files.copy (tmp.toPath (), target);
+				return true;
+			}
+			catch (IOException e)
+			{
+				LOGGER.warn (e, "wasn't able to reintegrate converted annotation ", entry.getEntityPath ());
+				notifications.add (new CaRoNotification (
+					CaRoNotification.SERVERITY_WARN,
+					"wasn't able to reintegrate converted annotation " + entry.getEntityPath () + " : " + e.getMessage ()));
+			}
+		}
+		return false;
+	}
+
+
 	/**
 	 * Add an annotation signalling that this is the main entry.
 	 * 
@@ -228,11 +299,43 @@ public class CaToRo
 	 *          the annotation number
 	 * @param annotations
 	 *          the list of existing annotations
-	 * @return the int
+	 * @return the annotationNumber
 	 */
-	private int handleMetaData (Path target, List<MetaDataObject> meta,
+	private int handleMetaData (PathMetadata pmd, Path target, List<MetaDataObject> meta,
 		Path annotationsDir, int annotationNumber, List<PathAnnotation> annotations)
 	{
+		if (meta.size () == 1)
+		{
+			// special case -- we could annotate the file in the manifest directly
+			MetaDataObject m = meta.get (0);
+			
+			if (m instanceof OmexMetaDataObject)
+			{
+				OmexDescription omex = ((OmexMetaDataObject) m).getOmexDescription ();
+				if (omex.getCreators ().size () == 1)
+				{
+					VCard creator = omex.getCreators ().get (0);
+					if ((creator.getEmail () == null || creator.getEmail ().length () == 0) && (creator.getOrganization () == null || creator.getOrganization ().length () == 0))
+					{
+						String name = creator.getGivenName ();
+						if (name == null)
+							name = creator.getFamilyName ();
+						else
+						{
+							if (creator.getFamilyName () != null)
+								name = (name.length () > 0 ? name + " " : "") + creator.getFamilyName ();
+						}
+						if (name != null)
+						{
+							pmd.setCreatedBy (new Agent (name));
+							return annotationNumber;
+						}
+					}
+				}
+			}
+		}
+		
+		
 		for (MetaDataObject m : meta)
 		{
 			// add that to the evolution?

@@ -67,6 +67,12 @@ public abstract class CaRoConverter
 	/** The annotation to indicate a main entry. */
 	public static URI									URI_BF_MAIN_ENTRY;
 	
+	/** The annotation to indicate it was an RO annotation. */
+	public static URI									URI_RO_CONV_ANNOTATION;
+	
+	/** The annotation to indicate it was an annotation referenced in the RO. */
+	public static URI									URI_RO_COPY_ANNOTATION;
+	
 	/** The annotation to indicate that this was converted. */
 	public static URI									URI_CA_RO_CONV;
 	
@@ -82,6 +88,10 @@ public abstract class CaRoConverter
 			URI_BF_MAIN_ENTRY = new URI ("http://binfalse.de#rootdocument");
 			URI_CA_RO_CONV = new URI (
 				"http://sems.uni-rostock.de/CaRo/annotations#ca2ro");
+			URI_RO_CONV_ANNOTATION = new URI (
+				"http://sems.uni-rostock.de/CaRo/annotations#roConvertedAnnotation");
+			URI_RO_COPY_ANNOTATION = new URI (
+				"http://sems.uni-rostock.de/CaRo/annotations#roCopiedAnnotation");
 		}
 		catch (URISyntaxException e)
 		{

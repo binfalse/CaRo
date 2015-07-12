@@ -19,6 +19,7 @@
 package de.unirostock.sems.caro.converters;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Properties;
 
 import javax.xml.transform.TransformerException;
 
@@ -40,6 +42,7 @@ import org.apache.taverna.robundle.manifest.PathMetadata;
 import org.jdom2.JDOMException;
 
 import de.binfalse.bflog.LOGGER;
+import de.binfalse.bfutils.AlphabetIterator;
 import de.unirostock.sems.caro.CaRoConverter;
 import de.unirostock.sems.caro.CaRoNotification;
 import de.unirostock.sems.cbarchive.ArchiveEntry;
@@ -61,6 +64,8 @@ import de.unirostock.sems.cbext.Formatizer;
 public class RoToCa
 	extends CaRoConverter
 {
+	
+	private List<PathAnnotation> handledAnnotations;
 	
 	/** The temporary location. */
 	private File temporaryLocation;
@@ -122,6 +127,7 @@ public class RoToCa
 	@Override
 	protected boolean convert ()
 	{
+		handledAnnotations = new ArrayList<PathAnnotation> ();
 		try
 		{
 			// setup empty combine archive
@@ -216,7 +222,7 @@ public class RoToCa
 							vcard.setGivenName (names[0]);
 							vcard.setFamilyName ("");
 							for (int i = 1; i < names.length; i++)
-								vcard.setFamilyName (vcard.getFamilyName () + (i < names.length - 1 ? " " : ""));
+								vcard.setFamilyName (vcard.getFamilyName () + (i < names.length - 1 ? " " : "") + names[i]);
 						}
 						
 						if (createdOn != null)
@@ -259,6 +265,49 @@ public class RoToCa
 				}
 			}
 			
+			// other ro meta data
+			String annotationsDir = "/.ro/annotations/";
+			AlphabetIterator alhpa = AlphabetIterator.getLowerCaseIterator ();
+			for (PathAnnotation annot : annotations)
+			{
+				if (!handledAnnotations.contains (annot))
+				{
+					try
+					{
+						File newAnnotation = Files.createTempFile ("CaRoFromRoConvertedAnnotation", ".fromRo").toFile ();
+						Properties properties = new Properties();
+						properties.put ("header", annot.getAbout ().toString ());
+						properties.put ("body", annot.getContent ().toString ());
+						if (annot.getUri () != null)
+							properties.put ("uri", annot.getUri ().toString ());
+						FileOutputStream out = new FileOutputStream(newAnnotation);
+						properties.store (out, "conversion from research object");
+						out.close ();
+						
+						// import file
+						String targetName = newAnnotation.getName ().toString ();
+						while (combineArchive.getEntry (annotationsDir + targetName) != null)
+							targetName += alhpa.next ();
+						combineArchive.addEntry (newAnnotation, annotationsDir + targetName, URI_RO_CONV_ANNOTATION);
+						
+						// if the body is a file in the annotations directory we need to also incluse the file.
+						if (annot.getContent ().toString ().startsWith ("/.ro/annotations/"))
+						{
+							String annotation = annot.getContent ().toString ();
+							File tmp = File.createTempFile ("CaRoFromRo", "annotation");
+							tmp.delete ();
+							Files.copy (researchObject.getRoot ().resolve (annotation), tmp.toPath ());
+							combineArchive.addEntry (tmp, annotation, URI_RO_COPY_ANNOTATION);
+						}
+					}
+					catch (IOException e)
+					{
+						LOGGER.warn (e, "wasn't able to convert annotation about ", annot.getAbout ());
+						notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN, "wasn't able to convert annotation about " + annot.getAbout ()));
+					}
+				}
+			}
+			
 			return true;
 		}
 		catch (IOException | JDOMException | ParseException | CombineArchiveException e)
@@ -289,11 +338,13 @@ public class RoToCa
 			{
 				// this is a main entry
 				combineArchive.addMainEntry (entry);
+				handledAnnotations.add (annot);
 				continue;
 			}
 			
 			if (annotationHasOmexTag (annot, annotations))
 			{
+				handledAnnotations.add (annot);
 				// copy it to the list of overall annotations
 				try
 				{
@@ -313,12 +364,12 @@ public class RoToCa
 					LOGGER.warn (e, "reading meta data file ", annot.getContent (), " in research object at ", sourceFile, " failed");
 					notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_ERROR, "reading meta data file " + annot.getContent () + " in research object at " + sourceFile + " failed because: " + e.getMessage ()));
 				}
-			}
+			}/*
 			else
 			{
 				// what should we do?
 				LOGGER.error ("this is not implemented yet: " + annot);
-			}
+			}*/
 		}
 	}
 
@@ -337,7 +388,10 @@ public class RoToCa
 			if (annot.getAbout ().equals (annotation.getUri ()))
 				// is there the flag?
 				if (annot.getContent ().equals (URI_OMEX_META))
+				{
+					handledAnnotations.add (annot);
 					return true;
+				}
 		return false;
 	}
 
