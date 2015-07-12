@@ -76,6 +76,9 @@ public abstract class CaRoConverter
 	/** The annotation to indicate that this was converted. */
 	public static URI									URI_CA_RO_CONV;
 	
+	/** The annotation to indicate that this was converted. */
+	public static URI									URI_RO_CA_CONV;
+	
 	static
 	{
 		try
@@ -88,6 +91,8 @@ public abstract class CaRoConverter
 			URI_BF_MAIN_ENTRY = new URI ("http://binfalse.de#rootdocument");
 			URI_CA_RO_CONV = new URI (
 				"http://sems.uni-rostock.de/CaRo/annotations#ca2ro");
+			URI_RO_CA_CONV = new URI (
+				"http://sems.uni-rostock.de/CaRo/annotations#ro2ca");
 			URI_RO_CONV_ANNOTATION = new URI (
 				"http://sems.uni-rostock.de/CaRo/annotations#roConvertedAnnotation");
 			URI_RO_COPY_ANNOTATION = new URI (

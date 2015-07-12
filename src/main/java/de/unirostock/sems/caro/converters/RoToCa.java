@@ -43,6 +43,7 @@ import org.jdom2.JDOMException;
 
 import de.binfalse.bflog.LOGGER;
 import de.binfalse.bfutils.AlphabetIterator;
+import de.unirostock.sems.caro.CaRo;
 import de.unirostock.sems.caro.CaRoConverter;
 import de.unirostock.sems.caro.CaRoNotification;
 import de.unirostock.sems.cbarchive.ArchiveEntry;
@@ -272,6 +273,9 @@ public class RoToCa
 			{
 				if (!handledAnnotations.contains (annot))
 				{
+					if (annot.getContent ().equals (URI_CA_RO_CONV))
+						continue;
+					
 					try
 					{
 						File newAnnotation = Files.createTempFile ("CaRoFromRoConvertedAnnotation", ".fromRo").toFile ();
@@ -307,6 +311,10 @@ public class RoToCa
 					}
 				}
 			}
+			
+			OmexDescription omex = new OmexDescription (new VCard (null, "CaRo version " + CaRo.CARO_VERSION, null, "sems.uni-rostock.de"), new Date ());
+			omex.setDescription (URI_RO_CA_CONV.toString ());
+			combineArchive.addDescription (new OmexMetaDataObject (omex));
 			
 			return true;
 		}
