@@ -56,6 +56,9 @@ public class CaRoTests
 	public static final File	CA_EXAMPLE_CONTAINS_EVOLUTION	= new File ("test/test-ca-contains-valid-evolution.omex");
 	public static final File	RO_EXAMPLE1	= new File ("test/DocumentObject.ro");
 	public static final File	RO_EXAMPLE_CONTAINING_REMOTES	= new File ("test/test-ro-remotefile.ro");
+	public static final File	RO_EXAMPLE_CONTAINS_MANIFEST	= new File ("test/test-ro-camanifest.ro");
+	public static final File	RO_EXAMPLE_CONTAINS_METAFILE	= new File ("test/test-ro-cametadata.ro");
+	public static final File	RO_EXAMPLE_CONTAINS_METATESTS	= new File ("test/test-ro-metatests.ro");
 	
 	/** A temporary folder. */
 	@Rule

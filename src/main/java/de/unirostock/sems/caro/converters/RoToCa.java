@@ -10,18 +10,23 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
 import javax.xml.transform.TransformerException;
 
 import org.apache.taverna.robundle.Bundles;
+import org.apache.taverna.robundle.manifest.Agent;
 import org.apache.taverna.robundle.manifest.Manifest;
 import org.apache.taverna.robundle.manifest.PathAnnotation;
 import org.apache.taverna.robundle.manifest.PathMetadata;
 import org.jdom2.JDOMException;
+
+import com.hp.hpl.jena.vocabulary.VCARD;
 
 import de.binfalse.bflog.LOGGER;
 import de.unirostock.sems.caro.CaRoConverter;
@@ -30,6 +35,10 @@ import de.unirostock.sems.cbarchive.ArchiveEntry;
 import de.unirostock.sems.cbarchive.CombineArchive;
 import de.unirostock.sems.cbarchive.CombineArchiveException;
 import de.unirostock.sems.cbarchive.meta.MetaDataFile;
+import de.unirostock.sems.cbarchive.meta.MetaDataObject;
+import de.unirostock.sems.cbarchive.meta.OmexMetaDataObject;
+import de.unirostock.sems.cbarchive.meta.omex.OmexDescription;
+import de.unirostock.sems.cbarchive.meta.omex.VCard;
 import de.unirostock.sems.cbext.Formatizer;
 
 
@@ -142,7 +151,93 @@ public class RoToCa
 				// respect annotations
 				handleAnnotations (pmd.getFile (), pmd, annotations, entry, archiveEntries);
 				
-				// special files? -> evolution, 
+				// handle manifest annotations
+				Agent createdBy = pmd.getCreatedBy ();
+				if (createdBy != null && createdBy.getName () != null)
+				{
+					String name = createdBy.getName ();
+					
+					boolean addNewMeta = true;
+					if (entry.getDescriptions ().size () > 0 )
+					{
+						List<MetaDataObject> descriptions = entry.getDescriptions ();
+						for (MetaDataObject descr : descriptions)
+						{
+							if (!addNewMeta)
+								continue;
+							if (descr instanceof OmexMetaDataObject)
+							{
+								List<VCard> creators = ((OmexMetaDataObject) descr).getOmexDescription ().getCreators ();
+								if (creators != null && creators.size () > 0)
+								{
+									for (VCard creator : creators)
+									{
+										String thisName = creator.getGivenName () == null ? "" : creator.getGivenName ();
+										if (creator.getFamilyName () != null)
+											thisName += (thisName.length () > 0 ? " " : "") + creator.getFamilyName ();
+										if (name.equals (thisName))
+										{
+											addNewMeta = false;
+										}
+									}
+								}
+							}
+						}
+					}
+					if (addNewMeta)
+					{
+						OmexDescription descr = null;
+						
+						FileTime createdOn = pmd.getCreatedOn ();
+						
+						String [] names = name.split (" ");
+						VCard vcard = new VCard ();
+						if (names.length > 1)
+						{
+							vcard.setGivenName (names[0]);
+							vcard.setFamilyName ("");
+							for (int i = 1; i < names.length; i++)
+								vcard.setFamilyName (vcard.getFamilyName () + (i < names.length - 1 ? " " : ""));
+						}
+						
+						if (createdOn != null)
+							descr = new OmexDescription (vcard, new Date (createdOn.toMillis ()), "converted from Research Object manifest");
+						else
+							descr = new OmexDescription (vcard, new Date (), "converted from Research Object manifest");
+						
+						entry.addDescription (new OmexMetaDataObject (descr));
+					}
+				}
+				
+				
+				
+				
+			}
+			
+			// evolution(s)?
+			if (roManifest.getHistory () != null)
+			{
+				for (Path hist : roManifest.getHistory ())
+				{
+					// extract
+					File tmp = File.createTempFile ("CaRoFromRo", hist.getFileName ().toString ());
+					tmp.delete ();
+					Files.copy (hist, tmp.toPath ());
+					tmp.deleteOnExit ();
+
+					// check some special files
+					if (!includeFile (hist))
+						continue;
+
+					// import
+					URI format = hist.toString ().equals ("/.ro/evolution.ttl") ? URI_TURTLE_MIME : null;
+					if (format == null)
+					{
+							format = Formatizer.guessFormat (tmp);
+					}
+					ArchiveEntry entry = combineArchive.addEntry (tmp, hist.toString (), format);
+					archiveEntries.put (entry.getFilePath (), entry);
+				}
 			}
 			
 			return true;
@@ -172,17 +267,17 @@ public class RoToCa
 			if (annotationHasOmexTag (annot, annotations))
 			{
 				// copy it to the list of overall annotations
-				List<String> errors = new ArrayList<String> ();
 				try
 				{
 					//System.out.println (annot.getContent ());
 					Path annoPath = researchObject.getRoot ().resolve (annot.getContent ().toString ());
+					List<String> errors = new ArrayList<String> ();
 					MetaDataFile.readFile (annoPath, archiveEntries, combineArchive, true, errors);
 					if (errors.size () > 0)
 						for (String err : errors)
 						{
 							LOGGER.warn ("wasn't able to read omex meta file ", annot.getContent (), " in research object at ", sourceFile, " because ", err);
-							notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_ERROR, "wasn't able to read omex meta file " + annot.getContent () + " in research object at " + sourceFile + " because " + err));
+							notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN, "wasn't able to read omex meta file " + annot.getContent () + " in research object at " + sourceFile + " because " + err));
 						}
 				}
 				catch (IOException | ParseException | JDOMException | CombineArchiveException e)
