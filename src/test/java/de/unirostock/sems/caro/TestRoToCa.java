@@ -164,6 +164,7 @@ public class TestRoToCa
 			assertFalse ("converting did not fail",
 				conv.convertTo (new File (tmp.getAbsolutePath () + "/does/not/exist")));
 			assertTrue ("expected some errors", conv.hasErrors ());
+			tmp.delete ();
 		}
 		catch (IOException e)
 		{
@@ -233,8 +234,8 @@ public class TestRoToCa
 			
 			assertEquals ("expected 4 aggregates", 4, ro.getManifest ().getAggregates ().size ());
 			assertEquals ("expected 11 annotations", 11, ro.getManifest ().getAnnotations ().size ());
-			
-			System.out.println (tmp + " -- " + tmp2);
+			tmp.delete ();
+			tmp2.delete ();
 		}
 		catch (IOException e)
 		{
@@ -267,6 +268,7 @@ public class TestRoToCa
 			assertTrue ("expected some notifications", conv.getNotifications ()
 				.size () > 0);
 			assertTrue ("expected some warnings", conv.hasWarnings ());
+			tmp.delete ();
 		}
 		catch (IOException e)
 		{
