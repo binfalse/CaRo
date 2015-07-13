@@ -235,7 +235,7 @@ public class TestRoToCa
 			assertEquals ("expected 4 aggregates", 4, ro.getManifest ().getAggregates ().size ());
 			assertEquals ("expected 11 annotations", 11, ro.getManifest ().getAnnotations ().size ());
 			tmp.delete ();
-			tmp2.delete ();
+			//tmp2.delete ();
 		}
 		catch (IOException e)
 		{

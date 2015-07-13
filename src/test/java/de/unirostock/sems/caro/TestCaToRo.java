@@ -113,9 +113,9 @@ public class TestCaToRo
 			assertEquals ("double conversion resulted in diff in main files: "
 				+ caComparison, 0, caComparison.numMainDiff);
 			
-			// System.out.println (tmp + " -- " + tmp2);
-			tmp.delete ();
-			tmp2.delete ();
+			System.out.println (tmp + " -- " + tmp2);
+			//tmp.delete ();
+			//tmp2.delete ();
 		}
 		catch (IOException | JDOMException | ParseException
 			| CombineArchiveException e)

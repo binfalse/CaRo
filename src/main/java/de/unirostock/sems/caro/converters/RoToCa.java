@@ -57,36 +57,43 @@ import de.unirostock.sems.cbarchive.meta.omex.VCard;
 import de.unirostock.sems.cbext.Formatizer;
 
 
+
 /**
  * The Class RoToCa converts research objects to combine archives.
- *
+ * 
  * @author Martin Scharm
  */
 public class RoToCa
 	extends CaRoConverter
 {
 	
-	private List<PathAnnotation> handledAnnotations;
+	private List<PathAnnotation>	handledAnnotations;
 	
 	/** The temporary location. */
-	private File temporaryLocation;
+	private File									temporaryLocation;
+	
 	
 	/**
 	 * Instantiates a new converter.
-	 *
-	 * @param researchObject the research object
+	 * 
+	 * @param researchObject
+	 *          the research object
 	 */
 	public RoToCa (File researchObject)
 	{
 		super (researchObject);
 	}
 	
-	/* (non-Javadoc)
+	
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.unirostock.sems.caro.CaRoConverter#openSourceContainer()
 	 */
 	@Override
 	protected boolean openSourceContainer ()
 	{
+		// TODO check mime
 		try
 		{
 			researchObject = Bundles.openBundleReadOnly (sourceFile.toPath ());
@@ -94,13 +101,20 @@ public class RoToCa
 		}
 		catch (IOException e)
 		{
-			LOGGER.warn (e, "wasn't able to read the research object at ", sourceFile);
-			notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_ERROR, "wasn't able to read the combine archive at " + sourceFile + " : " + e.getMessage ()));
+			LOGGER
+				.warn (e, "wasn't able to read the research object at ", sourceFile);
+			notifications.add (new CaRoNotification (
+				CaRoNotification.SERVERITY_ERROR,
+				"wasn't able to read the combine archive at " + sourceFile + " : "
+					+ e.getMessage ()));
 		}
 		return false;
 	}
-
-	/* (non-Javadoc)
+	
+	
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.unirostock.sems.caro.CaRoConverter#closeSourceContainer()
 	 */
 	@Override
@@ -116,13 +130,17 @@ public class RoToCa
 		catch (IOException e)
 		{
 			LOGGER.error (e, "wasn't able to close research object ", sourceFile);
-			notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN, "wasn't able to close the research object at " + sourceFile + " : " + e.getMessage ()));
+			notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN,
+				"wasn't able to close the research object at " + sourceFile + " : "
+					+ e.getMessage ()));
 		}
 		return false;
 	}
 	
 	
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.unirostock.sems.caro.CaRoConverter#convert()
 	 */
 	@Override
@@ -135,8 +153,7 @@ public class RoToCa
 			temporaryLocation = File.createTempFile ("CaRoFromRo", "container");
 			temporaryLocation.delete ();
 			combineArchive = new CombineArchive (temporaryLocation);
-			HashMap<String, ArchiveEntry>	archiveEntries = new HashMap<String, ArchiveEntry> ();
-			
+			HashMap<String, ArchiveEntry> archiveEntries = new HashMap<String, ArchiveEntry> ();
 			
 			// read bundle stuff
 			Manifest roManifest = researchObject.getManifest ();
@@ -156,88 +173,32 @@ public class RoToCa
 				}
 				
 				// extract
-				File tmp = File.createTempFile ("CaRoFromRo", pmd.getFile ().getFileName ().toString ());
+				File tmp = File.createTempFile ("CaRoFromRo", pmd.getFile ()
+					.getFileName ().toString ());
 				tmp.delete ();
 				Files.copy (pmd.getFile (), tmp.toPath ());
 				tmp.deleteOnExit ();
-
+				
 				// check some special files
 				if (!includeFile (pmd.getFile ()))
 					continue;
-
+				
 				// import
 				URI format = pmd.getConformsTo ();
 				if (format == null)
 				{
-						format = Formatizer.guessFormat (tmp);
+					format = Formatizer.guessFormat (tmp);
 				}
-				ArchiveEntry entry = combineArchive.addEntry (tmp, pmd.getFile ().toString (), format);
+				ArchiveEntry entry = combineArchive.addEntry (tmp, pmd.getFile ()
+					.toString (), format);
 				archiveEntries.put (entry.getFilePath (), entry);
-
+				
 				// respect annotations
-				handleAnnotations (pmd.getFile (), pmd, annotations, entry, archiveEntries);
+				handleAnnotations (pmd.getFile (), pmd, annotations, entry,
+					archiveEntries);
 				
 				// handle manifest annotations
-				Agent createdBy = pmd.getCreatedBy ();
-				if (createdBy != null && createdBy.getName () != null)
-				{
-					String name = createdBy.getName ();
-					
-					boolean addNewMeta = true;
-					if (entry.getDescriptions ().size () > 0 )
-					{
-						List<MetaDataObject> descriptions = entry.getDescriptions ();
-						for (MetaDataObject descr : descriptions)
-						{
-							if (!addNewMeta)
-								continue;
-							if (descr instanceof OmexMetaDataObject)
-							{
-								List<VCard> creators = ((OmexMetaDataObject) descr).getOmexDescription ().getCreators ();
-								if (creators != null && creators.size () > 0)
-								{
-									for (VCard creator : creators)
-									{
-										String thisName = creator.getGivenName () == null ? "" : creator.getGivenName ();
-										if (creator.getFamilyName () != null)
-											thisName += (thisName.length () > 0 ? " " : "") + creator.getFamilyName ();
-										if (name.equals (thisName))
-										{
-											addNewMeta = false;
-										}
-									}
-								}
-							}
-						}
-					}
-					if (addNewMeta)
-					{
-						OmexDescription descr = null;
-						
-						FileTime createdOn = pmd.getCreatedOn ();
-						
-						String [] names = name.split (" ");
-						VCard vcard = new VCard ();
-						if (names.length > 1)
-						{
-							vcard.setGivenName (names[0]);
-							vcard.setFamilyName ("");
-							for (int i = 1; i < names.length; i++)
-								vcard.setFamilyName (vcard.getFamilyName () + (i < names.length - 1 ? " " : "") + names[i]);
-						}
-						
-						if (createdOn != null)
-							descr = new OmexDescription (vcard, new Date (createdOn.toMillis ()), "converted from Research Object manifest");
-						else
-							descr = new OmexDescription (vcard, new Date (), "converted from Research Object manifest");
-						
-						entry.addDescription (new OmexMetaDataObject (descr));
-					}
-				}
-				
-				
-				
-				
+				handleCreators (entry, pmd);
 			}
 			
 			// evolution(s)?
@@ -246,22 +207,25 @@ public class RoToCa
 				for (Path hist : roManifest.getHistory ())
 				{
 					// extract
-					File tmp = File.createTempFile ("CaRoFromRo", hist.getFileName ().toString ());
+					File tmp = File.createTempFile ("CaRoFromRo", hist.getFileName ()
+						.toString ());
 					tmp.delete ();
 					Files.copy (hist, tmp.toPath ());
 					tmp.deleteOnExit ();
-
+					
 					// check some special files
 					if (!includeFile (hist))
 						continue;
-
+					
 					// import
-					URI format = hist.toString ().equals ("/.ro/evolution.ttl") ? URI_TURTLE_MIME : null;
+					URI format = hist.toString ().equals ("/.ro/evolution.ttl") ? URI_TURTLE_MIME
+						: null;
 					if (format == null)
 					{
-							format = Formatizer.guessFormat (tmp);
+						format = Formatizer.guessFormat (tmp);
 					}
-					ArchiveEntry entry = combineArchive.addEntry (tmp, hist.toString (), format);
+					ArchiveEntry entry = combineArchive.addEntry (tmp, hist.toString (),
+						format);
 					archiveEntries.put (entry.getFilePath (), entry);
 				}
 			}
@@ -278,13 +242,14 @@ public class RoToCa
 					
 					try
 					{
-						File newAnnotation = Files.createTempFile ("CaRoFromRoConvertedAnnotation", ".fromRo").toFile ();
-						Properties properties = new Properties();
+						File newAnnotation = Files.createTempFile (
+							"CaRoFromRoConvertedAnnotation", ".fromRo").toFile ();
+						Properties properties = new Properties ();
 						properties.put ("header", annot.getAbout ().toString ());
 						properties.put ("body", annot.getContent ().toString ());
 						if (annot.getUri () != null)
 							properties.put ("uri", annot.getUri ().toString ());
-						FileOutputStream out = new FileOutputStream(newAnnotation);
+						FileOutputStream out = new FileOutputStream (newAnnotation);
 						properties.store (out, "conversion from research object");
 						out.close ();
 						
@@ -292,57 +257,163 @@ public class RoToCa
 						String targetName = newAnnotation.getName ().toString ();
 						while (combineArchive.getEntry (annotationsDir + targetName) != null)
 							targetName += alhpa.next ();
-						combineArchive.addEntry (newAnnotation, annotationsDir + targetName, URI_RO_CONV_ANNOTATION);
+						combineArchive.addEntry (newAnnotation,
+							annotationsDir + targetName, URI_RO_CONV_ANNOTATION);
 						
-						// if the body is a file in the annotations directory we need to also incluse the file.
-						if (annot.getContent ().toString ().startsWith ("/.ro/annotations/"))
+						// if the body is a file in the annotations directory we need to
+						// also incluse the file.
+						if (annot.getContent ().toString ()
+							.startsWith ("/.ro/annotations/"))
 						{
 							String annotation = annot.getContent ().toString ();
 							File tmp = File.createTempFile ("CaRoFromRo", "annotation");
 							tmp.delete ();
-							Files.copy (researchObject.getRoot ().resolve (annotation), tmp.toPath ());
+							Files.copy (researchObject.getRoot ().resolve (annotation),
+								tmp.toPath ());
 							combineArchive.addEntry (tmp, annotation, URI_RO_COPY_ANNOTATION);
 						}
 					}
 					catch (IOException e)
 					{
-						LOGGER.warn (e, "wasn't able to convert annotation about ", annot.getAbout ());
-						notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN, "wasn't able to convert annotation about " + annot.getAbout ()));
+						LOGGER.warn (e, "wasn't able to convert annotation about ",
+							annot.getAbout ());
+						notifications.add (new CaRoNotification (
+							CaRoNotification.SERVERITY_WARN,
+							"wasn't able to convert annotation about " + annot.getAbout ()));
 					}
 				}
 			}
 			
-			OmexDescription omex = new OmexDescription (new VCard (null, "CaRo version " + CaRo.CARO_VERSION, null, "sems.uni-rostock.de"), new Date ());
+			OmexDescription omex = new OmexDescription (new VCard (null,
+				"CaRo version " + CaRo.CARO_VERSION, null, "sems.uni-rostock.de"),
+				new Date ());
 			omex.setDescription (URI_RO_CA_CONV.toString ());
 			combineArchive.addDescription (new OmexMetaDataObject (omex));
 			
 			return true;
 		}
-		catch (IOException | JDOMException | ParseException | CombineArchiveException e)
+		catch (IOException | JDOMException | ParseException
+			| CombineArchiveException e)
 		{
-			LOGGER.warn (e, "wasn't able to convert research object at ", sourceFile, " into a combine archive");
-			notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_ERROR, "wasn't able to convert research object at " + sourceFile + " into a combine archive : " + e.getMessage ()));
+			LOGGER.warn (e, "wasn't able to convert research object at ", sourceFile,
+				" into a combine archive");
+			notifications.add (new CaRoNotification (
+				CaRoNotification.SERVERITY_ERROR,
+				"wasn't able to convert research object at " + sourceFile
+					+ " into a combine archive : " + e.getMessage ()));
 		}
 		return false;
 	}
 	
 	
+	/**
+	 * Handle a creator -- should that be included in the combine archive meta
+	 * data file?
+	 * 
+	 * @param author
+	 *          the author as stated in the RO manifest
+	 * @param descriptions
+	 *          meta date already available for the entry
+	 * @param creatorsToAdd
+	 *          the creators to add
+	 */
+	private void handleCreator (Agent author, List<MetaDataObject> descriptions,
+		List<VCard> creatorsToAdd)
+	{
+		if (author != null)
+		{
+			VCard toAdd = agentToVCard (author);
+			boolean addVcard = true;
+			for (MetaDataObject meta : descriptions)
+			{
+				if (!addVcard)
+					break;
+				if (meta instanceof OmexMetaDataObject)
+				{
+					List<VCard> vcards = ((OmexMetaDataObject) meta)
+						.getOmexDescription ().getCreators ();
+					if (vcards != null && vcards.size () > 0)
+					{
+						for (VCard creator : vcards)
+						{
+							if (sameVcard (creator, toAdd))
+							{
+								addVcard = false;
+								break;
+							}
+						}
+					}
+				}
+			}
+			if (addVcard)
+			{
+				for (VCard exists : creatorsToAdd)
+					if (sameVcard (exists, toAdd))
+						return;
+				creatorsToAdd.add (toAdd);
+			}
+		}
+	}
+	
+	
+	/**
+	 * Handle the creators/authors of an aggregated file.
+	 * 
+	 * @param entry
+	 *          the created archive entry
+	 * @param pmd
+	 *          the meta data of the entry in the RO manifest
+	 */
+	private void handleCreators (ArchiveEntry entry, PathMetadata pmd)
+	{
+		List<MetaDataObject> descriptions = entry.getDescriptions ();
+		List<VCard> creatorsToAdd = new ArrayList<VCard> ();
+		
+		handleCreator (pmd.getCreatedBy (), descriptions, creatorsToAdd);
+		if (pmd.getAuthoredBy () != null)
+			for (Agent author : pmd.getAuthoredBy ())
+				handleCreator (author, descriptions, creatorsToAdd);
+		
+		if (creatorsToAdd.size () > 0)
+		{
+			OmexDescription descr = null;
+			
+			FileTime createdOn = pmd.getCreatedOn ();
+			if (createdOn != null)
+				descr = new OmexDescription (creatorsToAdd, new Date (
+					createdOn.toMillis ()), "converted from Research Object manifest");
+			else
+				descr = new OmexDescription (creatorsToAdd, new Date (),
+					"converted from Research Object manifest");
+			
+			entry.addDescription (new OmexMetaDataObject (descr));
+		}
+	}
+	
 	
 	/**
 	 * Handle annotations.
-	 *
-	 * @param file the file
-	 * @param pmd the pmd
-	 * @param annotations the annotations
-	 * @param entry the entry
-	 * @param archiveEntries the archive entries
+	 * 
+	 * @param file
+	 *          the file
+	 * @param pmd
+	 *          the pmd
+	 * @param annotations
+	 *          the annotations
+	 * @param entry
+	 *          the entry
+	 * @param archiveEntries
+	 *          the archive entries
 	 */
-	private void handleAnnotations (Path file, PathMetadata pmd, List<PathAnnotation> annotations, ArchiveEntry entry, HashMap<String, ArchiveEntry> archiveEntries)
+	private void handleAnnotations (Path file, PathMetadata pmd,
+		List<PathAnnotation> annotations, ArchiveEntry entry,
+		HashMap<String, ArchiveEntry> archiveEntries)
 	{
 		List<PathAnnotation> curAnnotations = getAnnotations (pmd, annotations);
 		for (PathAnnotation annot : curAnnotations)
 		{
-			if (annot.getContent ().equals (URI_MAIN_ENTRY) || annot.getContent ().equals (URI_BF_MAIN_ENTRY))
+			if (annot.getContent ().equals (URI_MAIN_ENTRY)
+				|| annot.getContent ().equals (URI_BF_MAIN_ENTRY))
 			{
 				// this is a main entry
 				combineArchive.addMainEntry (entry);
@@ -356,36 +427,53 @@ public class RoToCa
 				// copy it to the list of overall annotations
 				try
 				{
-					//System.out.println (annot.getContent ());
-					Path annoPath = researchObject.getRoot ().resolve (annot.getContent ().toString ());
+					// System.out.println (annot.getContent ());
+					Path annoPath = researchObject.getRoot ().resolve (
+						annot.getContent ().toString ());
 					List<String> errors = new ArrayList<String> ();
-					MetaDataFile.readFile (annoPath, archiveEntries, combineArchive, true, errors);
+					MetaDataFile.readFile (annoPath, archiveEntries, combineArchive,
+						true, errors);
 					if (errors.size () > 0)
 						for (String err : errors)
 						{
-							LOGGER.warn ("wasn't able to read omex meta file ", annot.getContent (), " in research object at ", sourceFile, " because ", err);
-							notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN, "wasn't able to read omex meta file " + annot.getContent () + " in research object at " + sourceFile + " because " + err));
+							LOGGER.warn ("wasn't able to read omex meta file ",
+								annot.getContent (), " in research object at ", sourceFile,
+								" because ", err);
+							notifications
+								.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN,
+									"wasn't able to read omex meta file " + annot.getContent ()
+										+ " in research object at " + sourceFile + " because "
+										+ err));
 						}
 				}
-				catch (IOException | ParseException | JDOMException | CombineArchiveException e)
+				catch (IOException | ParseException | JDOMException
+					| CombineArchiveException e)
 				{
-					LOGGER.warn (e, "reading meta data file ", annot.getContent (), " in research object at ", sourceFile, " failed");
-					notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_ERROR, "reading meta data file " + annot.getContent () + " in research object at " + sourceFile + " failed because: " + e.getMessage ()));
+					LOGGER.warn (e, "reading meta data file ", annot.getContent (),
+						" in research object at ", sourceFile, " failed");
+					notifications.add (new CaRoNotification (
+						CaRoNotification.SERVERITY_ERROR, "reading meta data file "
+							+ annot.getContent () + " in research object at " + sourceFile
+							+ " failed because: " + e.getMessage ()));
 				}
 			}/*
-			else
-			{
-				// what should we do?
-				LOGGER.error ("this is not implemented yet: " + annot);
-			}*/
+				 * else
+				 * {
+				 * // what should we do?
+				 * LOGGER.error ("this is not implemented yet: " + annot);
+				 * }
+				 */
 		}
 	}
-
+	
+	
 	/**
 	 * Annotation has omex tag.
-	 *
-	 * @param annotation the annotation
-	 * @param annotations the annotations
+	 * 
+	 * @param annotation
+	 *          the annotation
+	 * @param annotations
+	 *          the annotations
 	 * @return true, if successful
 	 */
 	private boolean annotationHasOmexTag (PathAnnotation annotation,
@@ -402,12 +490,15 @@ public class RoToCa
 				}
 		return false;
 	}
-
+	
+	
 	/**
 	 * Gets the annotations.
-	 *
-	 * @param pmd the pmd
-	 * @param annotations the annotations
+	 * 
+	 * @param pmd
+	 *          the pmd
+	 * @param annotations
+	 *          the annotations
 	 * @return the annotations
 	 */
 	private List<PathAnnotation> getAnnotations (PathMetadata pmd,
@@ -421,26 +512,33 @@ public class RoToCa
 		}
 		return curAnnotations;
 	}
-
+	
+	
 	/**
 	 * Handle a remote file.
-	 *
-	 * @param pmd the meta date of the file
+	 * 
+	 * @param pmd
+	 *          the meta date of the file
 	 * @return true, if it was included
 	 */
 	private boolean handleRemoteFile (PathMetadata pmd)
 	{
 		// TODO: try to download the file?
-		LOGGER.warn ("skipping manifest entry ", pmd.getUri (), " as it seems to be no local file");
-		notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN, "skipping manifest entry " + pmd.getUri () + " as it seems to be no local file"));
+		LOGGER.warn ("skipping manifest entry ", pmd.getUri (),
+			" as it seems to be no local file");
+		notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN,
+			"skipping manifest entry " + pmd.getUri ()
+				+ " as it seems to be no local file"));
 		
 		return false;
 	}
 	
+	
 	/**
 	 * Should we include a certain file?.
-	 *
-	 * @param target the file in question
+	 * 
+	 * @param target
+	 *          the file in question
 	 * @return true, if file can be included
 	 */
 	private boolean includeFile (Path target)
@@ -448,15 +546,18 @@ public class RoToCa
 		for (String path : CA_RESTRICTIONS)
 			if (target.startsWith (path))
 			{
-				notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN, 
-					"dropping " + path + " as this is a special file in combine archives!"));
+				notifications.add (new CaRoNotification (
+					CaRoNotification.SERVERITY_WARN, "dropping " + path
+						+ " as this is a special file in combine archives!"));
 				return false;
 			}
 		return true;
 	}
 	
 	
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.unirostock.sems.caro.CaRoConverter#write(java.io.File)
 	 */
 	@Override
@@ -475,16 +576,21 @@ public class RoToCa
 		catch (IOException | TransformerException e)
 		{
 			LOGGER.warn (e, "wasn't able to save combine archive to ", target);
-			notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_ERROR, "wasn't able to save combine archive to " + target + " : " + e.getMessage ()));
+			notifications.add (new CaRoNotification (
+				CaRoNotification.SERVERITY_ERROR,
+				"wasn't able to save combine archive to " + target + " : "
+					+ e.getMessage ()));
 		}
 		return false;
 	}
 	
+	
 	/**
 	 * Returns the combine archive.
 	 * 
-	 * Will be <code>null</code> unless you called {@link de.unirostock.sems.caro.CaRoConverter#convert()}.
-	 *
+	 * Will be <code>null</code> unless you called
+	 * {@link de.unirostock.sems.caro.CaRoConverter#convert()}.
+	 * 
 	 * @return the converted combine archive
 	 */
 	public CombineArchive getCombineArchive ()

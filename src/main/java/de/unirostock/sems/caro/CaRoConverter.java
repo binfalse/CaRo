@@ -25,10 +25,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.taverna.robundle.Bundle;
+import org.apache.taverna.robundle.manifest.Agent;
 import org.jdom2.Namespace;
 
 import de.binfalse.bflog.LOGGER;
 import de.unirostock.sems.cbarchive.CombineArchive;
+import de.unirostock.sems.cbarchive.meta.omex.VCard;
 
 
 
@@ -254,5 +256,131 @@ public abstract class CaRoConverter
 			return false;
 		}
 		return true;
+	}
+	
+	
+	/**
+	 * Convert an RO agent to a CA vcard.
+	 * 
+	 * @param agent
+	 *          the agent
+	 * @return the vcard
+	 */
+	protected static VCard agentToVCard (Agent agent)
+	{
+		if (agent == null)
+			return null;
+		
+		VCard vcard = new VCard ();
+		
+		String name = agent.getName ();
+		URI mail = agent.getUri ();
+		
+		boolean emptyVcard = true;
+		
+		if (name != null && name.length () > 0)
+		{
+			String[] names = name.split (" ");
+			if (names.length > 1)
+			{
+				vcard.setGivenName (names[0]);
+				vcard.setFamilyName ("");
+				for (int i = 1; i < names.length; i++)
+					vcard.setFamilyName (vcard.getFamilyName ()
+						+ (i < names.length - 1 ? " " : "") + names[i]);
+			}
+			else if (names.length == 1)
+				vcard.setGivenName (names[0]);
+			emptyVcard = false;
+		}
+		
+		if (mail != null && mail.getScheme ().equals ("mailto"))
+		{
+			vcard.setEmail (mail.getRawSchemeSpecificPart ());
+			emptyVcard = false;
+		}
+		
+		return emptyVcard ? null : vcard;
+	}
+	
+	
+	/**
+	 * Convert a CA vcard to an RO agent.
+	 * 
+	 * @param vcard
+	 *          the vcard
+	 * @param notifications
+	 *          the notifications
+	 * @return the agent
+	 */
+	protected static Agent vcardToAgent (VCard vcard,
+		List<CaRoNotification> notifications)
+	{
+		if (vcard == null)
+			return null;
+		
+		Agent agent = new Agent ();
+		
+		boolean emptyAgent = true;
+		String name = "";
+		if (vcard.getGivenName () != null && vcard.getFamilyName () != null)
+			name = vcard.getGivenName () + " " + vcard.getFamilyName ();
+		else if (vcard.getGivenName () != null)
+			name = vcard.getGivenName ();
+		else if (vcard.getFamilyName () != null)
+			name = vcard.getFamilyName ();
+		
+		if (name.length () > 0)
+		{
+			agent.setName (name);
+			emptyAgent = false;
+		}
+		
+		try
+		{
+			if (vcard.getEmail () != null && vcard.getEmail ().length () > 0)
+			{
+				agent.setUri (new URI ("mailto", vcard.getEmail (), null));
+				emptyAgent = false;
+			}
+		}
+		catch (URISyntaxException e)
+		{
+			LOGGER.warn (e, "wasn't able to create mailto uri for ",
+				vcard.getEmail ());
+			notifications.add (new CaRoNotification (CaRoNotification.SERVERITY_WARN,
+				"wasn't able to create mailto uri for " + vcard.getEmail ()));
+		}
+		
+		return emptyAgent ? null : agent;
+	}
+	
+	
+	/**
+	 * Compare two VCards.
+	 * 
+	 * @param a
+	 *          the first VCard
+	 * @param b
+	 *          the second VCards
+	 * @return true, if equal
+	 */
+	protected boolean sameVcard (VCard a, VCard b)
+	{
+		if (a.getFamilyName () == null && b.getFamilyName () != null)
+			return false;
+		if (a.getGivenName () == null && b.getGivenName () != null)
+			return false;
+		if (a.getFamilyName () != null && b.getFamilyName () == null)
+			return false;
+		if (a.getGivenName () != null && b.getGivenName () == null)
+			return false;
+		
+		if ( ( (a.getGivenName () == null || a.getGivenName ().equals (
+			b.getGivenName ())) && (a.getFamilyName () == null || a.getFamilyName ()
+			.equals (b.getFamilyName ())))
+			|| (a.getEmail () != null && a.getEmail ().equals (b.getEmail ())))
+			return true;
+		return false;
 	}
 }
