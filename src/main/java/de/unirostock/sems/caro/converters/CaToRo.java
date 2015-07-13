@@ -231,7 +231,7 @@ public class CaToRo
 				in.close ();
 				
 				PathAnnotation pa = new PathAnnotation ();
-				pa.setAbout (new URI ((String) properties.get ("header")));
+				pa.setAbout (new URI ((String) properties.get ("about")));
 				pa.setContent (new URI ((String) properties.get ("body")));
 				
 				annotations.add (pa);

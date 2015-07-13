@@ -245,7 +245,7 @@ public class RoToCa
 						File newAnnotation = Files.createTempFile (
 							"CaRoFromRoConvertedAnnotation", ".fromRo").toFile ();
 						Properties properties = new Properties ();
-						properties.put ("header", annot.getAbout ().toString ());
+						properties.put ("about", annot.getAbout ().toString ());
 						properties.put ("body", annot.getContent ().toString ());
 						if (annot.getUri () != null)
 							properties.put ("uri", annot.getUri ().toString ());
