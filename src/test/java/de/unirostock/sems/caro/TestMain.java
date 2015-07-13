@@ -18,15 +18,15 @@
  */
 package de.unirostock.sems.caro;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
 
+import org.apache.taverna.robundle.fs.BundleFileSystemProvider;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -55,15 +55,61 @@ public class TestMain
 	
 	
 	/**
-	 * Test caro.
+	 * Test files.
 	 */
-	@BeforeClass
-	public static void testInit ()
+	@Test
+	public void testFiles ()
 	{
 		assertTrue ("combine archive showcase does not exist",
 			CaRoTests.CA_EXAMPLE1.exists ());
 		assertTrue ("document object does not exist",
 			CaRoTests.RO_EXAMPLE1.exists ());
+
+		assertTrue ("file does not exist",
+			CaRoTests.CA_EXAMPLE_CONTAINS_MANIFEST.exists ());
+		assertTrue ("file does not exist",
+			CaRoTests.CA_EXAMPLE_CONTAINS_EVOLUTION.exists ());
+		assertTrue ("file does not exist",
+			CaRoTests.RO_EXAMPLE_CONTAINING_REMOTES.exists ());
+		assertTrue ("file does not exist",
+			CaRoTests.RO_EXAMPLE_CONTAINS_MANIFEST.exists ());
+		assertTrue ("file does not exist",
+			CaRoTests.RO_EXAMPLE_CONTAINS_METAFILE.exists ());
+		assertTrue ("file does not exist",
+			CaRoTests.RO_EXAMPLE_CONTAINS_METATESTS.exists ());
+		
+		
+		try
+		{
+			assertEquals ("wrong mime type",
+				BundleFileSystemProvider.APPLICATION_VND_WF4EVER_ROBUNDLE_ZIP, 
+				Files.probeContentType (CaRoTests.RO_EXAMPLE1.toPath ()));
+			assertEquals ("wrong mime type",
+				BundleFileSystemProvider.APPLICATION_VND_WF4EVER_ROBUNDLE_ZIP, 
+				Files.probeContentType (CaRoTests.RO_EXAMPLE_CONTAINING_REMOTES.toPath ()));
+			assertEquals ("wrong mime type",
+				BundleFileSystemProvider.APPLICATION_VND_WF4EVER_ROBUNDLE_ZIP, 
+				Files.probeContentType (CaRoTests.RO_EXAMPLE_CONTAINS_MANIFEST.toPath ()));
+			assertEquals ("wrong mime type",
+				BundleFileSystemProvider.APPLICATION_VND_WF4EVER_ROBUNDLE_ZIP, 
+				Files.probeContentType (CaRoTests.RO_EXAMPLE_CONTAINS_METAFILE.toPath ()));
+			assertEquals ("wrong mime type",
+				BundleFileSystemProvider.APPLICATION_VND_WF4EVER_ROBUNDLE_ZIP, 
+				Files.probeContentType (CaRoTests.RO_EXAMPLE_CONTAINS_METATESTS.toPath ()));
+		}
+		catch (IOException e)
+		{
+			fail ("failed to get mime type " + e.getMessage ());
+		}
+	}
+	
+	
+	/**
+	 * Test caro.
+	 */
+	@BeforeClass
+	public static void testInit ()
+	{
 		out = System.out;
 		err = System.err;
 	}

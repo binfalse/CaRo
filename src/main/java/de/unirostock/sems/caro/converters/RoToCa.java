@@ -35,6 +35,7 @@ import java.util.Properties;
 import javax.xml.transform.TransformerException;
 
 import org.apache.taverna.robundle.Bundles;
+import org.apache.taverna.robundle.fs.BundleFileSystemProvider;
 import org.apache.taverna.robundle.manifest.Agent;
 import org.apache.taverna.robundle.manifest.Manifest;
 import org.apache.taverna.robundle.manifest.PathAnnotation;
@@ -93,7 +94,24 @@ public class RoToCa
 	@Override
 	protected boolean openSourceContainer ()
 	{
-		// TODO check mime
+		try
+		{
+			String mime = Files.probeContentType (sourceFile.toPath ());
+			if (!mime.equals (BundleFileSystemProvider.APPLICATION_VND_WF4EVER_ROBUNDLE_ZIP))
+			{
+				notifications.add (new CaRoNotification (
+					CaRoNotification.SERVERITY_ERROR, "file at " + sourceFile
+						+ " does not seem to be a research object: wrong mime type : " + mime));
+				return false;
+			}
+		}
+		catch (IOException e)
+		{
+			LOGGER.error (e, "wasn't able to get mime type of ", sourceFile);
+			notifications.add (new CaRoNotification (
+				CaRoNotification.SERVERITY_ERROR, "wasn't able to get mime type of "
+					+ sourceFile + " : " + e.getMessage ()));
+		}
 		try
 		{
 			researchObject = Bundles.openBundleReadOnly (sourceFile.toPath ());
@@ -101,8 +119,8 @@ public class RoToCa
 		}
 		catch (IOException e)
 		{
-			LOGGER
-				.warn (e, "wasn't able to read the research object at ", sourceFile);
+			LOGGER.error (e, "wasn't able to read the research object at ",
+				sourceFile);
 			notifications.add (new CaRoNotification (
 				CaRoNotification.SERVERITY_ERROR,
 				"wasn't able to read the combine archive at " + sourceFile + " : "
