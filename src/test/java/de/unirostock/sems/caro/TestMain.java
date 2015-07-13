@@ -32,6 +32,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import de.unirostock.sems.cbarchive.meta.omex.VCard;
+
 
 
 /**
@@ -250,5 +252,40 @@ public class TestMain
 			.toString ().length () > 0);
 		assertFalse ("sys.out collection did not work properly", outContent
 			.toString ().length () > 0);
+	}
+	
+	
+	@Test
+	public void testVcardCompare ()
+	{
+		VCard v1 = new VCard ("fam", "given", "mail", "org");
+		VCard v2 = new VCard ("fam", "given", "mail", "org");
+		assertTrue ("expected vcards to be equal", CaRoConverter.sameVcard (v1, v2));
+		v1.setOrganization ("who cares");
+		assertTrue ("expected vcards to be equal", CaRoConverter.sameVcard (v1, v2));
+		v1.setGivenName ("i care");
+		v1.setEmail ("me to");
+		assertFalse ("expected vcards to not be equal", CaRoConverter.sameVcard (v1, v2));
+		v1.setEmail (null);
+		
+		v1.setGivenName (null);
+		assertFalse ("expected vcards to not be equal", CaRoConverter.sameVcard (v1, v2));
+		v1.setFamilyName (null);
+		
+		assertFalse ("expected vcards to not be equal", CaRoConverter.sameVcard (v1, v2));
+		v2.setFamilyName (null);
+		assertFalse ("expected vcards to not be equal", CaRoConverter.sameVcard (v1, v2));
+		v2.setGivenName (null);
+		
+		v1.setEmail ("mail");
+		assertTrue ("expected vcards to be equal", CaRoConverter.sameVcard (v1, v2));
+		
+		v1.setEmail ("mail2");
+		assertFalse ("expected vcards to not be equal", CaRoConverter.sameVcard (v1, v2));
+		
+		v1.setGivenName ("some");
+		assertFalse ("expected vcards to not be equal", CaRoConverter.sameVcard (v1, v2));
+		v1.setFamilyName ("thing");
+		assertFalse ("expected vcards to not be equal", CaRoConverter.sameVcard (v1, v2));
 	}
 }

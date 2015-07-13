@@ -456,13 +456,7 @@ public class RoToCa
 							+ annot.getContent () + " in research object at " + sourceFile
 							+ " failed because: " + e.getMessage ()));
 				}
-			}/*
-				 * else
-				 * {
-				 * // what should we do?
-				 * LOGGER.error ("this is not implemented yet: " + annot);
-				 * }
-				 */
+			}
 		}
 	}
 	

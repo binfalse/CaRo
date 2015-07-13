@@ -365,7 +365,7 @@ public abstract class CaRoConverter
 	 *          the second VCards
 	 * @return true, if equal
 	 */
-	protected boolean sameVcard (VCard a, VCard b)
+	public static boolean sameVcard (VCard a, VCard b)
 	{
 		if (a.getFamilyName () == null && b.getFamilyName () != null)
 			return false;
@@ -378,9 +378,12 @@ public abstract class CaRoConverter
 		
 		if ( ( (a.getGivenName () == null || a.getGivenName ().equals (
 			b.getGivenName ())) && (a.getFamilyName () == null || a.getFamilyName ()
-			.equals (b.getFamilyName ())))
-			|| (a.getEmail () != null && a.getEmail ().equals (b.getEmail ())))
+			.equals (b.getFamilyName ()))) && !(a.getGivenName () == null && a.getFamilyName () == null))
 			return true;
+		
+		if (a.getEmail () != null && a.getEmail ().equals (b.getEmail ()))
+			return true;
+		
 		return false;
 	}
 }
