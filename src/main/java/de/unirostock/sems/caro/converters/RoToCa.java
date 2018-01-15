@@ -453,7 +453,7 @@ public class RoToCa
 						annot.getContent ().toString ());
 					List<String> errors = new ArrayList<String> ();
 					MetaDataFile.readFile (annoPath, archiveEntries, combineArchive,
-						true, errors);
+						null, null, true, errors);
 					if (errors.size () > 0)
 						for (String err : errors)
 						{
