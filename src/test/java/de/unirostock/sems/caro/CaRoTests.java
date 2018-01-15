@@ -85,8 +85,13 @@ public class CaRoTests
 			}
 			if (!found)
 			{
-				System.out.println ("did not find in ro: " + entry.getFilePath ());
-				result.numCaOnly++;
+				if (entry.getFilePath ().startsWith ("/.ro/"))
+					System.out.println ("ignoring file-not-found as it is research object based...");
+				else
+				{
+					System.out.println ("did not find in ro: " + entry.getFilePath ());
+					result.numCaOnly++;
+				}
 			}
 		}
 		

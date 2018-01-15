@@ -179,9 +179,11 @@ public class RoToCa
 			List<PathMetadata> aggregations = roManifest.getAggregates ();
 			for (PathMetadata pmd : aggregations)
 			{
-				// TODO: handle root annotations
 				if (pmd.getFile () != null && Files.isDirectory (pmd.getFile ()))
+				{
+					// TODO: handle root annotations
 					continue;
+				}
 				
 				// if it's a file add to combine archive
 				if (pmd.getFile () == null)
@@ -236,13 +238,14 @@ public class RoToCa
 						continue;
 					
 					// import
-					URI format = hist.toString ().equals ("/.ro/evolution.ttl") ? URI_TURTLE_MIME
+					URI format = hist.toString ().equals ("evolution.ttl") ? URI_TURTLE_MIME
 						: null;
 					if (format == null)
 					{
 						format = Formatizer.guessFormat (tmp);
 					}
-					ArchiveEntry entry = combineArchive.addEntry (tmp, hist.toString (),
+					// add it to the .ro directory to indicate, that it is coming from a research object
+					ArchiveEntry entry = combineArchive.addEntry (tmp, "/.ro/" + hist.toString (),
 						format);
 					archiveEntries.put (entry.getFilePath (), entry);
 				}

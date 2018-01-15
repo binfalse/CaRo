@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 
+import org.apache.jena.ext.com.google.common.io.Files;
 import org.apache.taverna.robundle.Bundle;
 import org.apache.taverna.robundle.Bundles;
 import org.jdom2.JDOMException;
@@ -78,6 +79,10 @@ public class TestRoToCa
 				.toPath ());
 			CaRoTests.ComparisonResult comparison = CaRoTests.compareContainers (
 				convertedCa, sourceBundle);
+
+			Files.copy(tmp, new File ("/tmp/omex.zip"));
+			Files.copy(CaRoTests.RO_EXAMPLE1, new File ("/tmp/ro.zip"));
+			
 			assertEquals ("conversion resulted in diff in entries (ca only): "
 				+ comparison, 0, comparison.numCaOnly);
 			assertEquals ("conversion resulted in diff in entries (ro only): "
@@ -256,7 +261,7 @@ public class TestRoToCa
 			File tmp = File.createTempFile ("testCaToRo", ".bundle");
 			tmp.delete ();
 			CaRoConverter conv = new RoToCa (CaRoTests.RO_EXAMPLE_CONTAINS_METAFILE);
-			assertTrue ("converting did fail", conv.convertTo (tmp));
+			assertTrue ("conversion did fail", conv.convertTo (tmp));
 			assertTrue ("expected some warnings", conv.hasWarnings ());
 			assertTrue ("expected some notifications", conv.getNotifications ()
 				.size () > 0);
@@ -264,7 +269,7 @@ public class TestRoToCa
 			tmp.delete ();
 			
 			conv = new RoToCa (CaRoTests.RO_EXAMPLE_CONTAINS_MANIFEST);
-			assertTrue ("converting did fail", conv.convertTo (tmp));
+			assertTrue ("conversion did fail", conv.convertTo (tmp));
 			assertTrue ("expected some notifications", conv.getNotifications ()
 				.size () > 0);
 			assertTrue ("expected some warnings", conv.hasWarnings ());
@@ -289,7 +294,7 @@ public class TestRoToCa
 			File tmp = File.createTempFile ("testRoToCa", ".omex");
 			tmp.delete ();
 			CaRoConverter conv = new RoToCa (CaRoTests.CA_EXAMPLE1);
-			System.out.println ("converting was successful: " + conv.convertTo (tmp));
+			System.out.println ("conversion was successful: " + conv.convertTo (tmp));
 			System.out.println (tmp);
 			tmp.delete ();
 		}
